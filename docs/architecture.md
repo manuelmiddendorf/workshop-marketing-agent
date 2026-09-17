@@ -1,321 +1,315 @@
-# Architektur: workshop-marketing-agent
+# Architecture: workshop-marketing-agent
 
-Stand: 17. September 2026. Status: **Entwurf zur gemeinsamen Prüfung**.
+As of September 17, 2026. Status: **Draft for joint review**.
 
-Die bestätigten Produktentscheidungen stehen in [v1-scope.md](v1-scope.md).
-Die technische Ausgestaltung in diesem Dokument ist ein Vorschlag für die spätere
-Implementierung. Offene Punkte sind ausdrücklich markiert. Es gibt noch keinen
-Produktionscode und keine geprüfte Integration mit der bestehenden Lehrer-App.
+Confirmed product decisions are documented in [v1-scope.md](v1-scope.md).
+The technical design in this document is a proposal for later implementation.
+Open questions are explicitly marked. There is no production code or verified
+integration with the existing teacher app yet.
 
-## 1. Ziel und Architekturprinzipien
+## 1. Purpose and architectural principles
 
-Das System hilft einem Yogastudio, bestehende Workshops mit wenig Arbeitsaufwand
-über passende Kanäle zu bewerben. Zugleich soll es als öffentliches Portfolio
-nachvollziehbares Python-, Applied-LLM- und Evaluation-Engineering zeigen.
+The system helps a yoga studio promote existing workshops through suitable
+channels with little manual effort. As a public portfolio project, it should also
+demonstrate understandable Python development, applied LLM engineering, and evaluation.
 
-- Eigenständiges, installierbares Python-Package mit expliziter Pipeline.
-- Gemeinsames Workshop-Datenmodell statt Abhängigkeit vom Firestore-Schema.
-- Deterministische Regeln für Fakten, Kanäle, Links, Status und Aktionen.
-- LLM für sprachliche Entwürfe und Überarbeitung; Menschen geben Fassungen frei.
-- Bestehende Lehrer-App für Bedienung; Firebase-Anbindung für Betrieb und Daten.
-- Ergebnisse und Fehler pro Kanal; erfolgreiche Teilergebnisse bleiben erhalten.
-- Kleine verständliche Änderungen und Evaluation von Beginn an.
+- An independent, installable Python package with an explicit pipeline.
+- A shared workshop data model that does not depend on the Firestore schema.
+- Deterministic rules for facts, channels, links, statuses, and actions.
+- An LLM for drafting and revising copy; people approve specific versions.
+- The existing teacher app for the interface; Firebase integration for operation and data.
+- Results and errors per channel; successful partial results are preserved.
+- Small, understandable changes and evaluation from the start.
 
-Ausgangsgröße: 1–2 Workshops pro Monat, 2–3 Lehrer, Werbebeginn 2–3 Monate vorher.
-Das Design optimiert einen überschaubaren Betrieb und verständlichen Code.
+Initial scale: 1–2 workshops per month, 2–3 teachers, and promotion starting
+2–3 months before each workshop. The design favors manageable operation and clear code.
 
-## 2. Verantwortlichkeiten
+## 2. Responsibilities
 
-| Bestandteil | Verantwortlich für |
+| Component | Responsibilities |
 | --- | --- |
-| Lehrer-App | Entwürfe anzeigen, direkt bearbeiten, Änderungswünsche eingeben, Alternativen und Bilder wählen, Kanäle deaktivieren, freigeben, manuelle Veröffentlichungen bestätigen |
-| Firebase-Anbindung | Authentifizierung und Workshop-Berechtigungen, Datenmapping, Bildreferenzen, serverseitige Secrets, dauerhafte Speicherung, atomare Reservierung von Aktionen, Verknüpfung mit Buchungen |
-| Python-Package | Normalisierung des öffentlichen Datenmodells, Kanaleignung, Promptaufbau, Generierung und Überarbeitung, Validierung, fachliche Zustandsregeln, Linkparameter, Kanaladapter, Evaluation |
-| Kanaladapter | Kanalspezifische Felder und Grenzen, Darstellung, Vorbereitung des Eintrags und optional offizielle Veröffentlichungs- und Aktualisierungsaufrufe |
+| Teacher app | Display drafts, allow direct editing and revision requests, select variants and images, disable channels, approve content, and confirm manual submissions or publications |
+| Firebase integration | Authentication and workshop access, data mapping, image references, server-side secrets, persistent storage, atomic reservation of actions, and links to bookings |
+| Python package | Normalize the package's public data model, determine channel suitability, assemble prompts, generate and revise copy, validate results, define business rules for state, build link parameters, provide channel adapters, and support evaluation |
+| Channel adapters | Channel-specific fields and limits, presentation, listing preparation, and optional calls to official publishing and update APIs |
 
-Die Firebase-Anbindung führt das Package serverseitig in Python aus. Aufrufe aus
-der Web-App sind über [Firebase Callable Functions](https://firebase.google.com/docs/functions/callable)
-möglich. Das Package importiert keine anwendungsspezifischen Firestore-Modelle.
-Für Evaluation und Tests kann es auch ohne Firebase ausgeführt werden.
+The Firebase integration runs the package in Python on the server. The web app
+can call it through [Firebase Callable Functions](https://firebase.google.com/docs/functions/callable).
+The package does not import application-specific Firestore models. Evaluation
+and tests can run without Firebase.
 
-Die Integrationsschicht speichert Zustände; das Package definiert ihre Bedeutung
-und erlaubte Übergänge. Konkrete Speicherung und API-Zugänge bleiben außerhalb
-der fachlichen Logik. Der genaue Ausführungsmodus ist unter Abschnitt 12 offen.
+The integration layer persists state; the package defines its meaning and
+allowed transitions. Concrete storage and API credentials stay outside the
+business logic. The exact execution model remains open in section 12.
 
-## 3. Daten und Faktentreue
+## 3. Data and factual accuracy
 
-Die Anbindung liefert ein geprüftes Abbild der Workshopdaten mit stabiler
-Workshop-ID und Quellversion. Es umfasst nach Bedarf Titel, Originalbeschreibung,
-Zeitzone, Beginn und Ende, Ort, Zielgruppe, Altersgrenzen, Leistungen,
-Buchungsadresse, Preise mit Währung, Frühbucherfristen und Bildreferenzen.
-Fehlende optionale Angaben bleiben unbekannt. Pflichtangaben hängen vom Kanal ab.
+The integration provides a validated snapshot of workshop data with a stable
+workshop ID and source version. As needed, it includes the title, original
+description, time zone, start and end times, location, audience, age limits,
+included services, booking URL, prices and currency, early-bird deadlines,
+and image references. Missing optional facts remain unknown. Required fields
+depend on the channel.
 
-Frühbucherdaten liegen bereits strukturiert in Firestore. Sie werden übernommen,
-nicht aus dem Beschreibungstext erschlossen. Fristen müssen eindeutig als
-Zeitpunkt mit Zeitzone interpretierbar sein. Die Bedeutung eines nur als Datum
-gespeicherten Fristendes muss beim Mapping geklärt werden.
+Early-bird data already exists as structured fields in Firestore. It is taken
+from those fields rather than inferred from the description. Deadlines must
+have an unambiguous interpretation as a timestamp with a time zone. The meaning
+of a deadline stored only as a date must be clarified during data mapping.
 
-Der ausführliche Originaltext bleibt unverändert, sofern ein Lehrer seine
-Überarbeitung nicht ausdrücklich anstößt. Sichtbare Seitenelemente wie
-„Vergangen“ und HTML-Kodierungen werden bei der Eingangsaufbereitung bereinigt.
-Ein Widerspruch zwischen Beschreibung und strukturierten Fakten muss vor einer
-betroffenen Veröffentlichung geklärt werden. Er wird nicht still aufgelöst.
+The detailed original copy remains unchanged unless a teacher explicitly starts
+a revision. Page elements such as "Vergangen" (past) and HTML encodings are cleaned
+up when preparing input. A conflict between the description and structured facts
+must be resolved before publishing affected content. It must not be resolved silently.
 
-Datum, Uhrzeit, Preis, Altersangaben und Buchungslink werden für die Ausgabe
-deterministisch formatiert. Zeitabhängige Angaben werden bei Generierung und
-erneut vor Veröffentlichung geprüft. Ein Frühbucherhinweis nennt seine Frist;
-abgelaufene Angebote dürfen nicht als aktuell beworben werden.
+Dates, times, prices, age information, and booking links are formatted
+deterministically for output. Time-sensitive facts are checked during generation
+and again before publishing. An early-bird offer must include its deadline;
+expired offers must not be promoted as current.
 
-Freie Sprache kann trotzdem unbelegte Behauptungen enthalten. Schema- und
-Faktenprüfungen garantieren keine vollständige semantische Richtigkeit.
-Eingeschränkte Textfelder, semantische Evaluation und menschliche Prüfung
-ergänzen sich. Insbesondere dürfen Eignung für Kinder, Leistungen, Qualifikationen,
-Verfügbarkeit und Wirkversprechen nicht aus plausiblen Annahmen entstehen.
+Free-form language can still contain unsupported claims. Schema and fact checks
+do not guarantee complete semantic accuracy. Constrained text fields, semantic
+evaluation, and human review complement each other. In particular, suitability
+for children, included services, qualifications, availability, and claims about
+benefits must not be inferred from plausible assumptions.
 
-## 4. Pipeline und Promptaufbau
+## 4. Pipeline and prompt construction
 
-Workshop laden → normalisieren → Konflikte prüfen → Kanäle empfehlen → Texte
-erzeugen → validieren → menschlich prüfen → veröffentlichen oder vorbereiten →
-Status speichern → Klicks und Buchungen zuordnen.
+Load workshop → normalize → check conflicts → recommend channels → generate copy
+→ validate → human review → publish or prepare submission → persist status
+→ attribute clicks and bookings.
 
-Die Kanalauswahl arbeitet mit nachvollziehbaren Regeln und liefert eine kurze
-Begründung. Beispielsweise setzt eine Empfehlung für einen Familienkanal eine
-passende tatsächliche Zielgruppe voraus. Sprachliche Anpassung erweitert nicht
-die Eignung des Workshops. Lehrer können geeignete Kanäle auswählen oder abwählen;
-fehlende Pflichtangaben bleiben Veröffentlichungshindernisse.
+Channel selection uses understandable rules and provides a short explanation.
+For example, recommending a family channel requires the workshop's stated audience
+to fit that channel.
+Adapting the wording does not broaden the workshop's suitability. Teachers can
+select or deselect suitable channels; missing required facts still block publishing.
 
-Ein Prompt wird aus überschaubaren, versionierten Bestandteilen zusammengesetzt:
+A prompt is assembled from small, versioned components:
 
-1. Gemeinsame Regeln und Grenzen der Textgestaltung.
-2. Geprüfte Workshopfakten und separat gekennzeichnete Originalbeschreibung.
-3. Zielgruppe, Kanalregeln und Stil: warm, herzlich, verständlich.
-4. Zweck der Werberunde und Zeitpunkt der Generierung.
-5. Bei Überarbeitung: aktueller Entwurf und Änderungswunsch.
-6. Schema für die erlaubten Ausgabefelder.
+1. Shared rules and boundaries for writing copy.
+2. Validated workshop facts and a separately identified original description.
+3. Audience, channel rules, and style: warm, welcoming, and clear.
+4. Purpose of the marketing round and the generation timestamp.
+5. For revisions: the current draft and the revision request.
+6. A schema for the allowed output fields.
 
-Geplant sind das offizielle OpenAI-Python-SDK, Pydantic und Structured Outputs.
-Die [offizielle Dokumentation](https://developers.openai.com/api/docs/guides/structured-outputs)
-beschreibt Pydantic-basierte Schemas. Schemaerfolg ersetzt keine Inhaltsprüfung;
-Ablehnungen, unvollständige Antworten und Validierungsfehler werden separat behandelt.
+The planned tools are the official OpenAI Python SDK, Pydantic, and Structured
+Outputs. The [official documentation](https://developers.openai.com/api/docs/guides/structured-outputs)
+describes Pydantic-based schemas. Passing schema validation does not replace
+content review; refusals, incomplete responses, and validation errors are handled
+separately.
 
-Pro Generierung werden Modellkennung, Promptversion, Schemaversion, Quellversion,
-Zeitpunkt und verfügbare Nutzungsdaten festgehalten. Workshoptexte und
-Änderungswünsche sind Eingabedaten und können keine Systemregeln, Berechtigungen,
-Zieladressen oder Veröffentlichungsaktionen ändern.
+Each generation records the model identifier, prompt version, schema version,
+source version, timestamp, and available usage data. Workshop text and revision
+requests are input data. They cannot change system rules, permissions, destination
+URLs, or publishing actions.
 
-Ein guter Entwurf wird vorausgewählt; bis zu zwei weitere Varianten können auf
-Wunsch erzeugt werden. Eine Überarbeitung verwendet die aktuelle Fassung, bewahrt
-die vorherige und benötigt nach Übernahme erneut Prüfung und Freigabe.
+One good draft is preselected; up to two additional variants can be generated
+on request. A revision uses the current version, preserves the previous one,
+and requires renewed review and approval when adopted.
 
-## 5. Kampagnen, Fassungen und gespeicherter Zustand
+## 5. Campaigns, versions, and persistent state
 
-Vorgeschlagenes Modell: Ein Workshop hat eine Marketingkampagne mit mehreren
-Werberunden. Eine Runde unterscheidet etwa Erstankündigung und Erinnerung.
-Eine Korrektur einer Veröffentlichung ist eine Aktualisierung mit Bezug auf den
-bestehenden Beitrag; sie ist nicht automatisch eine neue Werberunde.
+Proposed model: a workshop has a marketing campaign with multiple marketing
+rounds, such as an initial announcement and a reminder. Correcting a publication
+is an update linked to the existing post; it does not automatically create a new round.
 
-| Information | Zweck |
+| Information | Purpose |
 | --- | --- |
-| Kampagne und Runde | Workshopbezug, Zweck, Ersteller, Zeitpunkte, ausgewählte Kanäle |
-| Kanalentwurf und Fassungen | Textfelder, Varianten, Änderungswunsch, Bild, fertiger Link, Quellversion, Prüfungsergebnis |
-| Freigabe | Freigebende Person, Zeitpunkt, genaue Fassung einschließlich Bild und Link |
-| Veröffentlichungsdatensatz | Kanal, externe Beitrags-ID und URL soweit verfügbar, veröffentlichte Fassung, Erstellungs- oder Aktualisierungszeitpunkt |
-| Ausführungsversuch | Operation, stabile Wiederholungskennung, Bearbeitungszustand, Fehlerklasse, Versuche und Zeitpunkte |
-| Manuelle Bestätigung | Wer wann Einreichung oder Veröffentlichung bestätigt hat, optional öffentlicher Link |
-| Zuordnung | Kampagne, Runde, Kanal, ausgewählte Variante, Klickreferenz und bestätigte Buchungsreferenz |
+| Campaign and round | Workshop reference, purpose, creator, timestamps, and selected channels |
+| Channel draft and versions | Text fields, variants, revision request, image, final link, source version, and validation result |
+| Approval | Approving person, timestamp, and exact version including image and link |
+| Publication record | Channel, external post ID and URL where available, published version, and creation or update timestamp |
+| Execution attempt | Operation, stable retry identifier, processing state, error class, attempts, and timestamps |
+| Manual confirmation | Who confirmed submission or publication and when, with an optional public URL |
+| Attribution | Campaign, round, channel, selected variant, click reference, and confirmed booking reference |
 
-Bearbeitungszustand und Veröffentlichungszustand werden getrennt gespeichert.
-Eine mögliche kleine Zustandsmenge ist:
+Draft state and publication state are stored separately. A possible small set
+of states is:
 
-- Entwurf: in Erstellung, Prüfung erforderlich, freigegeben, veraltet oder Fehler.
-- Veröffentlichung: nicht gestartet, in Ausführung, eingereicht, veröffentlicht,
-  fehlgeschlagen oder Ausgang unbekannt.
-- Zusätzlich: Kanal deaktiviert und Änderung erforderlich, falls zutreffend.
+- Draft: generating, review required, approved, outdated, or error.
+- Publication: not started, in progress, submitted, published, failed, or outcome unknown.
+- Additional flags: channel disabled and change required, where applicable.
 
-„Zum Kopieren bereit“ ist eine Anzeige aus gültigem Entwurf und manuellem Modus.
-„Eingereicht“ bedeutet bei redaktionellen Plattformen noch nicht „veröffentlicht“.
-Ein bestehender veröffentlichter Beitrag bleibt dokumentiert, auch wenn eine neue
-Fassung noch geprüft wird oder ihre Aktualisierung fehlschlägt.
+"Ready to copy" is a display state derived from a valid draft and manual mode.
+For editorial platforms, "submitted" does not yet mean "published". An existing
+published post remains recorded even while a new version awaits review or its
+update has failed.
 
-Freigaben gelten für eine konkrete Fassung. Text-, Bild- oder Linkänderungen
-machen sie ungültig. Geänderte relevante Workshopfakten und abgelaufene Preisfristen
-lösen eine erneute Prüfung aus. Direkt vor dem Versand vergleicht die Anbindung
-den aktuellen Stand mit der freigegebenen Grundlage.
+Approvals apply to a specific version. Changes to its text, image, or link
+invalidate approval. Changes to relevant workshop facts and expired price
+deadlines trigger another review. Immediately before sending, the integration
+compares the current state with the approved source data.
 
-Bereits veröffentlichte Beiträge mit Änderungsbedarf werden sichtbar markiert,
-sobald der aktuelle Stand geprüft wird. V1 verspricht keine zeitgesteuerte
-Hintergrundkorrektur. Lehrer stoßen Aktualisierungen und Erinnerungen an.
+Published posts that need changes are visibly flagged when the current data is
+checked. V1 does not promise scheduled background corrections. Teachers initiate
+updates and reminders.
 
-## 6. Kanaladapter
+## 6. Channel adapters
 
-Ein Adapter wird ausdrücklich in einer kleinen Registry registriert. Neue
-Kanalregeln sollen keinen Umbau der zentralen Pipeline verlangen. Die fachliche
-Schnittstelle besteht aus folgenden Verantwortlichkeiten, nicht aus einer
-universellen Plugin- oder Workflow-Engine:
+Adapters are explicitly registered in a small registry. Adding channel rules
+should not require redesigning the central pipeline. The business interface
+covers the responsibilities below; it is not a universal plugin or workflow engine.
 
-| Teil | Inhalt |
+| Part | Contents |
 | --- | --- |
-| Beschreibung | Kanal-ID, unterstützte Modi, Zielgruppen, Bildanforderungen, Pflichtfelder und bekannte Grenzen |
-| Eignung | Deterministisches Ergebnis mit nachvollziehbarer Begründung |
-| Entwurf | Ausgabeschema, Kanalinstruktionen, Darstellung und Validierung |
-| Vorbereitung | Kopierbare Felder, Zielseite, Bildreferenz und nötige Handlungsschritte |
-| Optionale Veröffentlichung | Offizielles Erstellen und gegebenenfalls Aktualisieren, strukturierte Ergebnisse und Fehler |
+| Description | Channel ID, supported modes, audiences, image requirements, required fields, and known limits |
+| Suitability | A deterministic result with an understandable explanation |
+| Draft | Output schema, channel instructions, presentation, and validation |
+| Preparation | Copyable fields, destination page, image reference, and required steps |
+| Optional publishing | Official creation and, where supported, update operations with structured results and errors |
 
-Modi: `automatic` veröffentlicht nach Freigabe über eine unterstützte Schnittstelle;
-`assisted` bereitet Formulare oder Einreichungen vor; `manual` liefert Text, Link
-und eine anschließende Bestätigungsmöglichkeit. Ein Adapter muss nicht alle Modi
-oder eine Veröffentlichungsfunktion besitzen. Kontokonfiguration und Credentials
-bestimmen zusätzlich, welche unterstützten Aktionen aktuell verfügbar sind.
+Modes: `automatic` publishes through a supported API after approval; `assisted`
+prepares forms or submissions; `manual` provides copy, a link, and a subsequent
+confirmation step. An adapter does not need to support all modes or implement
+publishing. Account configuration and credentials also determine which supported
+actions are currently available.
 
-Google ist der geplante erste externe automatische Kanal. Rausgegangen und HIMBEER
-beginnen als unterstützte manuelle Einträge. Ein manueller Ausweichweg darf
-angeboten werden, ohne einen fehlgeschlagenen API-Versuch als Erfolg auszugeben.
-Die eigene Workshopseite bleibt der kanonische Informations- und Buchungsort;
-ihr bestehender Veröffentlichungsablauf wird angebunden, nicht automatisch durch
-einen zweiten redaktionellen Ablauf ersetzt.
+Google is the planned first external automatic channel. Rausgegangen and HIMBEER
+start with assisted manual listings. A manual fallback may be offered without
+reporting a failed API attempt as successful. The studio's workshop page remains
+the canonical source of information and booking destination. Its existing
+publishing workflow is integrated, not automatically replaced by a second
+editorial workflow.
 
-## 7. Bilder
+## 7. Images
 
-Der Pool ist ein Katalog vorhandener Workshop- und Webseitenbilder. Originale
-müssen dafür nicht dupliziert werden. Er enthält stabile Bildkennungen,
-Referenzen, kurze Beschreibungen, Themen-Schlagwörter sowie Freigaben und
-gegebenenfalls Bildnachweise. Bekannte Abmessungen unterstützen die Kanalprüfung.
+The pool catalogs existing workshop and website images. Originals do not need
+to be duplicated. The catalog contains stable image identifiers, references,
+short descriptions, topic tags, usage permissions, and credits where required.
+Known dimensions support channel validation.
 
-Das Workshopbild ist vorausgewählt. Einfache Regeln schlagen bis zu fünf passende
-Alternativen vor; der restliche freigegebene Pool bleibt zugänglich. Die Auswahl
-wird pro Beitrag gespeichert und kann über Kanäle und Runden wiederverwendet werden.
-Die Anbindung löst Dateinamen in erreichbare Bilddaten oder URLs auf. Eine Datei im
-Frontend-Projekt ist nicht automatisch für die serverseitige Veröffentlichung
-erreichbar. Erreichbarkeit, Rechte und Kanalformat werden vor Versand geprüft.
+The workshop image is preselected. Simple rules suggest up to five suitable
+alternatives; the rest of the approved pool remains accessible. The selection is
+stored per post and can be reused across channels and rounds. The integration
+resolves filenames to accessible image data or URLs. A file in the frontend
+project is not automatically accessible for server-side publishing. Reachability,
+usage rights, and the channel's format requirements are checked before sending.
 
-## 8. Tracking und Buchungen
+## 8. Tracking and bookings
 
-Links enthalten deterministisch zugewiesene Werte für Workshop, Kampagne, Runde,
-Kanal und Variante sowie geeignete UTM-Parameter. Diese enthalten keine
-Personennamen, E-Mail-Adressen oder anderen Teilnehmerdaten.
+Links contain deterministically assigned values for workshop, campaign, round,
+channel, and variant, plus suitable UTM parameters. These values contain no
+names, email addresses, or other participant data.
 
-Die eigene Web-Anbindung erfasst einen Kampagnenbesuch und verknüpft ihn, soweit
-möglich, mit dem vorhandenen Buchungsvorgang. Eine serverseitig bestätigte
-Buchung wird einmalig gezählt; ein Checkout-Start oder die bloße Rückkehr von
-einer Bezahlseite genügt nicht. Wiederholte Zahlungsbenachrichtigungen dürfen
-keine weiteren Buchungen erzeugen. Stornierungen dürfen nicht als neue Buchungen
-erscheinen. Bestehende PayPal-/Stripe-Zahlungslogik wird nicht neu aufgebaut.
+The website integration records a campaign visit and links it to the existing
+booking flow where possible. A booking confirmed on the server is counted once;
+starting checkout or returning from a payment page is not sufficient. Repeated
+payment notifications must not produce additional bookings. Cancellations must
+not appear as new bookings. Existing PayPal and Stripe payment logic is reused.
 
-Der bestätigte Standard-Zuordnungszeitraum beträgt **90 Tage rückwärts ab der
-bestätigten Buchung**, bezogen auf den gebuchten Workshop. Es zählt der letzte
-erfasste gültige Marketingklick für diesen Workshop, der höchstens 90 Tage vor
-der Buchung liegt. Ein neuer gültiger Klick für denselben Workshop ersetzt den
-bisherigen Kontakt; sein Zeitpunkt bestimmt die neue Frist. Kontakte für andere
-Workshops werden nicht auf diese Buchung übertragen.
+The confirmed default attribution window is **90 days before the confirmed
+booking**, scoped to the booked workshop. Credit goes to the latest recorded
+valid marketing click for that workshop no more than 90 days before the booking.
+A new valid click for the same workshop replaces the previous touchpoint; its
+timestamp determines the new deadline. Touchpoints for other workshops are not
+transferred to this booking.
 
-Ein späterer direkter Besuch überschreibt den Kontakt nicht und verlängert seine
-Frist nicht. Ohne passenden Kontakt im Zeitraum bleibt die Herkunft unbekannt.
-Die 90 Tage sind ein konfigurierbarer Startwert, begründet durch den Werbevorlauf
-von 2–3 Monaten. Spätere Anpassungen werden anhand der beobachteten Abstände
-zwischen Klick und Buchung bewertet, nicht automatisch vorgenommen.
+A later direct visit does not overwrite the touchpoint or extend its deadline.
+Without a matching touchpoint within the window, the source remains unknown.
+The 90-day window is a configurable starting value based on the 2–3 month
+promotion period. Later adjustments are evaluated against observed delays
+between clicks and bookings, rather than applied automatically.
 
-Geräteübergreifende Vollständigkeit und kausale Aussagen über den Einfluss eines
-Kanals sind nicht zugesagt. Automatische Linkvorschauen und wiederholte Aufrufe
-können Klickzahlen beeinflussen.
+Complete tracking across devices and causal claims about a channel's impact
+are not promised. Automated link previews and repeated visits may affect click counts.
 
-Der Zuordnungszeitraum ist keine Festlegung der Datenspeicherdauer. Offen sind
-Wiedererkennung, Einwilligung, Aufbewahrung und Löschung. Diese müssen vor
-produktiver Besucherzuordnung festgelegt werden;
-dieses Dokument trifft keine Aussage über eine datenschutzrechtliche Ausnahme.
-Die eigene Buchungsseite erhält keine interne UTM-Markierung, die eine bereits
-erfasste externe Herkunft überschreibt.
+The attribution window does not define the data retention period. Visitor
+recognition, consent, retention, and deletion remain open. They must be defined
+before production visitor attribution; this document does not claim an exemption
+from privacy requirements. The studio's booking page must not add internal UTM
+parameters that overwrite an already captured external source.
 
-## 9. Fehler, Wiederholungen und doppelte Veröffentlichungen
+## 9. Errors, retries, and duplicate publishing
 
-Fehler sind pro Kanal sichtbar und unterscheidbar: fehlende Eingaben oder
-Credentials, Generierungs-Timeout, Ablehnung, Schema- oder Faktenfehler,
-Kanalfehler und unbekannter Ausgang. Freigaben sind nur für gültige Entwürfe möglich.
+Errors are visible per channel and distinguish missing input or credentials,
+generation timeouts, refusals, schema or fact errors, channel errors, and unknown
+outcomes. Only valid drafts can be approved.
 
-Vorübergehende Generierungs- und eindeutig wiederholbare API-Fehler können
-begrenzt mit Warteabstand wiederholt werden. Permanente Fehler benötigen eine
-sichtbare Korrektur. Eine automatische Reparatur eines Entwurfs erhält keine
-automatische Freigabe. Die konkrete Zahl der Versuche wird später festgelegt.
+Transient generation errors and API failures known to be safe to retry may be
+retried a limited number of times with delays. Permanent errors need a visible
+correction. An automatically repaired draft does not receive automatic approval.
+The exact retry count will be defined later.
 
-Vor einem Versand wird eine stabile Operationskennung dauerhaft reserviert.
-Gleichzeitige Klicks dürfen denselben Versand nicht mehrfach starten. Native
-Idempotenz eines Anbieters wird verwendet, wenn verfügbar. Externe Beitrags-IDs
-werden für Aktualisierungen gespeichert. Eine neue Fassung ist keine automatische
-Erlaubnis, einen bereits veröffentlichten Beitrag noch einmal anzulegen.
+Before sending, a stable operation identifier is reserved persistently.
+Concurrent clicks must not start the same publishing action more than once.
+Provider-native idempotency is used where available. External post IDs are stored
+for updates. A new version does not automatically authorize recreating an already
+published post.
 
-Bricht die Verbindung nach dem Versand ab, kann ein Beitrag schon existieren.
-Dann lautet der Zustand zunächst „Ausgang unbekannt“. Abgleich mit dem Anbieter
-oder menschliche Klärung geht einem erneuten Erstellen voraus. Eine lokale
-Kennung allein garantiert keine einmalige externe Veröffentlichung.
+If the connection breaks after sending, a post may already exist. The initial
+state is then "outcome unknown". Reconciliation with the provider or human
+clarification must precede another creation attempt. A local identifier alone
+does not guarantee a single external publication.
 
-## 10. Evaluation und Tests
+## 10. Evaluation and tests
 
-Ein erster Referenzsatz umfasst synthetische oder anonymisierte Kinder-Yoga-,
-Eltern-Kind-Yoga-, Wellness-, Meditations-, Stressabbau- und Massage-Workshops.
-Erwartete Kanaleignung und verbindliche Fakten gehören zu jedem Fall.
-Zusätzliche Fälle prüfen fehlende Angaben, widersprüchliche Texte, abgelaufene
-Frühbucherfristen, Terminänderungen, Prompt Injection und unzulässige Zielgruppen.
+An initial reference set covers synthetic or anonymized children's yoga,
+parent-child yoga, wellness, meditation, stress relief, and massage workshops.
+Each case includes expected channel suitability and authoritative facts.
+Additional cases cover missing information, conflicting copy, expired early-bird
+deadlines, date changes, prompt injection, and unsuitable audiences.
 
-Deterministische Prüfungen decken Pflichtfelder, Schemas, Zeichenlimits, bekannte
-Fakten, Preisfristen, Bildreferenzen und Links ab. Kritische Fehler dürfen nicht
-durch einen guten Durchschnittswert verdeckt werden. Auf dem vereinbarten
-Referenzsatz müssen die harten Prüfungen bestehen; dies ist kein Beweis für
-Fehlerfreiheit beliebiger freier Texte.
+Deterministic checks cover required fields, schemas, character limits, known
+facts, price deadlines, image references, and links. Critical errors must not
+be hidden by a good average score. The agreed reference set must pass the hard
+checks; this does not prove error-free behavior for arbitrary free-form text.
 
-Die qualitative Bewertung erfasst Ton, Zielgruppe, Kanaleignung, Titel,
-Handlungsaufforderung, Redundanz und unbelegte Aussagen. Eine kleine menschlich
-bewertete Referenz dient als Grundlage; ein LLM-Bewerter kann später ergänzen.
-Bewertungen verwenden vorab definierte Kriterien und Beispiele. Konkrete
-Bewertungsschwellen sind noch gemeinsam festzulegen.
+Qualitative evaluation covers tone, audience, channel suitability, title, call
+to action, repetition, and unsupported claims. A small reference set evaluated
+by people provides the foundation; an LLM judge may supplement it later.
+Evaluations use predefined criteria and examples. Specific scoring thresholds
+still need to be agreed.
 
-Vergleiche halten Fixtures, Prüfkriterien und Generierungszeitpunkt kontrolliert
-und protokollieren Prompt-/Schema-/Modellversion, Ergebnisse, Laufzeit und
-verfügbare Nutzungsdaten. Live-Generierungen können variieren; Reproduzierbarkeit
-bedeutet dokumentierte Bedingungen und auswertbare gespeicherte Resultate.
+Comparisons control fixtures, evaluation criteria, and the generation timestamp.
+They record prompt, schema, and model versions, results, runtime, and available
+usage data. Live generations can vary; reproducibility means documented conditions
+and stored results that can be analyzed.
 
-pytest ist als Testwerkzeug vorgesehen. Routinetests und CI verwenden Fakes oder
-gespeicherte synthetische Antworten und benötigen keine produktiven Credentials.
-Live-Evaluation ist ein eigener bewusster Lauf. Integrationstests prüfen besonders
-Freigabeentwertung, Teilfehler, konkurrierende Aktionen, unklaren Versandstatus
-und wiederholte Zahlungsbenachrichtigungen.
+pytest is the planned test tool. Routine tests and CI use fakes or stored
+synthetic responses and require no production credentials. Live evaluation is a
+separate, deliberate run. Integration tests focus particularly on invalidated
+approvals, partial failures, concurrent actions, unknown publishing outcomes,
+and repeated payment notifications.
 
-## 11. Sicherheit und Betrieb
+## 11. Security and operation
 
-- Alle Schreibaktionen prüfen Benutzer und bestehende Workshop-Berechtigungen
-  serverseitig. Lehrer benötigen keine zusätzliche Adminfreigabe für die Workshops,
-  die sie betreuen dürfen; der genaue vorhandene Berechtigungsumfang ist zu prüfen.
-- Generieren und Freigeben/Veröffentlichen sind getrennte Aktionen. Ein vom
-  Browser gesendeter Freigabestatus ist kein Berechtigungsnachweis.
-- Produktive Schlüssel, OAuth-Tokens und Firebase-Credentials bleiben serverseitig.
-  Eine spätere `.env.example` enthält ausschließlich Platzhalter.
-- Privilegierte Firebase-Zugriffe brauchen eigene Autorisierungsprüfungen;
-  Frontend-Sichtbarkeit ist keine Zugriffskontrolle.
-- Logs enthalten Kennungen, Status, Fehlerklassen und nötige Laufzeitdaten.
-  Secrets, vollständige Zahlungspayloads und Teilnehmerdaten werden nicht geloggt.
-- Öffentliche Fixtures und Screenshots verwenden synthetische oder anonymisierte
-  Daten und keine privaten Projektkonfigurationen.
-- Workshoptexte steuern keine Werkzeuge, Netzwerkziele oder Secrets. Buchungs- und
-  Bildadressen stammen aus geprüfter Konfiguration beziehungsweise Integrationsdaten.
-- Pro Kanal werden erforderliche Bildfreigaben und Darstellungsvorgaben beachtet.
+- All write operations check the user and existing workshop permissions on the
+  server. Teachers do not need additional administrator approval for workshops
+  they may manage; the exact existing access rules still need to be checked.
+- Generation and approval/publishing are separate actions. An approval status
+  sent by the browser is not proof of authorization.
+- Production keys, OAuth tokens, and Firebase credentials remain on the server.
+  A future `.env.example` contains placeholders only.
+- Privileged Firebase access requires its own authorization checks; frontend
+  visibility is not access control.
+- Logs contain identifiers, statuses, error classes, and necessary runtime data.
+  Secrets, full payment payloads, and participant data are not logged.
+- Public fixtures and screenshots use synthetic or anonymized data and exclude
+  private project configuration.
+- Workshop text cannot control tools, network destinations, or secrets. Booking
+  and image URLs come from validated configuration or integration data.
+- Required image permissions and presentation rules are respected per channel.
 
-## 12. Offene Punkte und der Zeitpunkt ihrer Klärung
+## 12. Open questions and when to resolve them
 
-Der Dokumentations-PR hält die gemeinsame Grundlage und ihre offenen Punkte fest.
-Diese Punkte werden jeweils vor der davon abhängigen Umsetzung entschieden oder
-geprüft. Die kleine Python-Paketgrundlage kann unabhängig von Plattformzugängen,
-Tracking und produktiver Firebase-Anbindung entstehen.
+The documentation PR records the shared foundation and its open questions.
+Each question is decided or verified before the implementation that depends on
+it. The minimal Python package foundation can be built independently of platform
+access, tracking, and production Firebase integration.
 
-| Punkt | Nächster Schritt | Erforderlich vor |
+| Topic | Next step | Required before |
 | --- | --- | --- |
-| Python-Laufzeit | Unterstützte Python-Version für Paket und geplante Firebase-Laufzeit auswählen | Festlegung der Paketgrundlage im ersten Implementierungs-Issue |
-| Workshop-Datenmodell | Ein anonymisiertes Beispiel aus der bestehenden App prüfen, einschließlich Frühbucherfristen, Altersangaben und Zeitzonen | Festlegung der öffentlichen Workshop-Datenmodelle |
-| Konkretes Datenmapping | Feldnamen, Versionierung, Fristsemantik, Buchungsstatus, Berechtigungen und Bildpfade in der bestehenden App prüfen | Umsetzung der jeweiligen Firebase-Integration |
-| Ausführung | Vorschlag: kurze, getrennte serverseitige Aktionen pro Kanal; Zeitbedarf messen und Verhalten bei Abbruch/Schließen der App festlegen | Anbindung der Generierung an die Lehrer-App und Zusage von Hintergrundausführung |
-| Tracking | 90 Tage mit Workshopbindung sind entschieden; Identifikation, Einwilligung, Aufbewahrung, Löschung und Definition der gezählten Buchung noch festlegen | Umsetzung der personenbezogenen Besucherzuordnung und ihrer Speicherung |
-| Evaluation | Bewertungsrubrik, Qualitätsgrenze und tolerierten Korrekturaufwand konkretisieren | Bewertung der ersten generierten Texte und Vergleich von Promptständen |
-| Google-Zugang | Owner-Zugriff ist vorhanden; separate API-Genehmigung, OAuth und nutzbare Profilstandorte prüfen; Zugang frühzeitig beantragen | Live-Prüfung und Abnahme des Google-Publishing-Adapters |
-| Andere Kanäle | Konkrete Pflichtfelder und Bildvorgaben prüfen; Anbieterzugänge einrichten und Eintragungszeit messen | Feldregeln vor dem jeweiligen Kanalentwurf; Zugänge und Zeitmessung vor dessen Pilotabnahme |
-| Modell | Modell und Versionsbindung anhand des ersten Generierungsfalls auswählen | Erster Live-Generierung und Vergleichsevaluation |
+| Python runtime | Select a supported Python version for the package and planned Firebase runtime | Defining the package foundation in the first implementation issue |
+| Workshop data model | Inspect an anonymized example from the existing app, including early-bird deadlines, age information, and time zones | Defining the public workshop data models |
+| Concrete data mapping | Check field names, versioning, deadline semantics, booking status, permissions, and image paths in the existing app | Implementing the respective Firebase integration |
+| Execution | Proposal: short, separate server-side actions per channel; measure runtime and define behavior when a request is canceled or the app is closed | Integrating generation into the teacher app and promising background execution |
+| Tracking | The 90-day window and workshop scope are decided; define identification, consent, retention, deletion, and what counts as a booking | Implementing and storing attribution linked to individual visitors |
+| Evaluation | Define the scoring rubric, quality threshold, and acceptable correction effort | Evaluating the first generated copy and comparing prompt versions |
+| Google access | Owner access is available; verify separate API approval, OAuth, and usable profile locations; apply for access early | Live verification and acceptance of the Google publishing adapter |
+| Other channels | Check concrete required fields and image rules; set up provider accounts and measure listing time | Field rules before the respective channel draft; access and time measurement before its pilot acceptance |
+| Model | Select the model and version pinning based on the first generation case | First live generation and comparative evaluation |
 
-Eine offene Integration wird nicht als vorhandene Funktion dokumentiert. Änderungen
-am bestätigten Scope werden mit dem Nutzer entschieden; normale Details innerhalb
-eines freigegebenen Issues werden ohne neue Grundsatzdiskussion gelöst.
+An outstanding integration must not be documented as an existing feature.
+Changes to confirmed scope are decided with the user; routine details within an
+approved issue are resolved without reopening fundamental decisions.

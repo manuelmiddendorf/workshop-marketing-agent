@@ -1,202 +1,212 @@
-# V1-Scope: workshop-marketing-agent
+# V1 scope: workshop-marketing-agent
 
-Stand: 17. September 2026. Status: **Entwurf zur gemeinsamen Prüfung**.
+As of September 17, 2026. Status: **Draft for joint review**.
 
-Dieses Dokument bündelt die im Architekturgespräch bestätigten Anforderungen.
-Die vorgeschlagene technische Ausgestaltung steht in [architecture.md](architecture.md).
-Offene Details sind dort separat aufgeführt. V1 ist noch nicht implementiert.
+This document collects the requirements confirmed during the architecture
+discussion. The proposed technical design is in [architecture.md](architecture.md),
+with open details listed separately. V1 has not been implemented yet.
 
-## 1. Produktziel
+## 1. Product goal
 
-Bestehende Workshops eines Yogastudios sollen zuverlässig und mit wenig aktiver
-Arbeit beworben werden. Es gibt ungefähr 1–2 Workshops pro Monat und 2–3 Lehrer.
-Die Werbung beginnt 2–3 Monate vor dem Workshop. Aktuell stammen die Teilnehmer
-vor allem aus dem Kreis gegenwärtiger oder ehemaliger Studiomitglieder.
+Existing workshops at a yoga studio should be promoted reliably with little
+active work. The studio runs approximately 1–2 workshops per month with 2–3
+teachers. Promotion starts 2–3 months before a workshop. Participants currently
+come mainly from current or former studio members.
 
-Das Projekt soll zugleich ein öffentliches Python-Portfolio mit klarer Architektur,
-kontrollierter LLM-Nutzung, Evaluation, Tests und echter Anwendungsintegration sein.
-Es belegt zunächst Applied-LLM- und Software-Engineering; eigenes Modelltraining
-gehört nicht zum V1-Ziel.
+The project should also serve as a public Python portfolio with clear
+architecture, controlled LLM use, evaluation, tests, and integration with a real
+application. It initially demonstrates applied LLM and software engineering;
+training a custom model is not a V1 goal.
 
-## 2. Bestätigte Entscheidungen
+## 2. Confirmed decisions
 
-- Python-Package statt TypeScript-/npm-Package; kein eigenständiger Ersatz für die
-  Lehrer-App. Die bestehende Weboberfläche kann ihre Sprache beibehalten.
-- Workshopdaten einschließlich Frühbucherinformationen kommen aus Firestore.
-  Die Integration mappt sie in das unabhängige Datenmodell des Packages.
-- Der ausführliche Originaltext bleibt ohne ausdrücklich angestoßene Überarbeitung
-  bestehen. Kanaltexte werden daraus herzlich, verständlich und passend abgeleitet.
-- Widersprüche zwischen strukturierten Daten und Text müssen vor Veröffentlichung
-  der betroffenen Inhalte geklärt werden.
-- Lehrer können die ihnen zugänglichen Workshops vollständig betreuen und Beiträge
-  selbst freigeben; eine zusätzliche Adminfreigabe ist nicht erforderlich.
-- Texte können direkt bearbeitet oder über einen kurzen Änderungswunsch per LLM
-  überarbeitet werden. Einzelne Kanäle lassen sich neu generieren oder deaktivieren.
-- Ein Vorschlag wird vorausgewählt; weitere Varianten sind optional bis zu drei
-  Vorschlägen insgesamt. Die aktuelle Auswahl wird ausdrücklich freigegeben.
-- Mehrere Werberunden sowie Aktualisierungen sind vorgesehen. Erinnerungen werden
-  in V1 von Lehrern angestoßen, nicht automatisch terminiert.
-- Bestehende Workshop- und Webseitenbilder bilden einen gemeinsamen Bildpool.
-  Das Workshopbild ist die Vorauswahl; passende Alternativen können gewählt werden.
-- Links, erfasste Klicks und bestätigte Buchungen sollen zugeordnet werden können.
-  Es gilt der letzte erfasste gültige Marketingklick für den gebuchten Workshop
-  innerhalb von 90 Tagen vor der bestätigten Buchung; sonst bleibt die Herkunft
-  unbekannt. Der Zeitraum ist als Standard konfigurierbar.
+- A Python package instead of a TypeScript/npm package; it does not replace the
+  teacher app. The existing web interface can retain its implementation language.
+- Workshop data, including early-bird information, comes from Firestore. The
+  integration maps it into the package's independent data model.
+- The detailed original copy is preserved unless a revision is explicitly
+  requested. Channel copy is derived from it in a warm, clear, and suitable style.
+- Conflicts between structured data and text must be resolved before affected
+  content is published.
+- Teachers can fully manage the workshops they have access to and approve posts
+  themselves; additional administrator approval is not required.
+- Copy can be edited directly or revised by the LLM using a short instruction.
+  Individual channels can be regenerated or disabled.
+- One draft is preselected; optional variants allow up to three suggestions in
+  total. The current selection must be explicitly approved.
+- Multiple marketing rounds and updates are planned. Teachers initiate reminders
+  in V1; they are not automatically scheduled.
+- Existing workshop and website images form a shared image pool. The workshop
+  image is the default; suitable alternatives can be selected.
+- Links, recorded clicks, and confirmed bookings should be attributable. The
+  latest recorded valid marketing click for the booked workshop within 90 days
+  before the confirmed booking receives credit; otherwise the source remains
+  unknown. The default window is configurable.
 
-## 3. Kanäle
+## 3. Channels
 
-| Kanal | Rolle in V1 | Veröffentlichungsweg |
+| Channel | Role in V1 | Publishing route |
 | --- | --- | --- |
-| Eigene Workshopseite | Verbindliche Information und Buchungsziel; bestehende Veröffentlichung anbinden | Über die vorhandene App; keine automatische Ersetzung des Originaltexts |
-| Google Business Profile | Erster externer automatischer Kanal | Offizielle API nach Freigabe; Zugang ist Voraussetzung |
-| Rausgegangen | Kostenloser Eintrag mit eigener Buchungsadresse | Vorbereitete Felder, Eintragen im Anbieterportal, Statusbestätigung |
-| HIMBEER / Berlin mit Kind | Kostenlose Kurseinträge für passende Kinder-, Eltern- und Familienangebote | Vorbereitete Felder für das Kursverzeichnis, Statusbestätigung |
+| Studio workshop page | Authoritative information and booking destination; integrate existing publishing | Through the existing app; no automatic replacement of the original copy |
+| Google Business Profile | First external automatic channel | Official API after approval; access is a prerequisite |
+| Rausgegangen | Free listing with the studio's own booking URL | Prepared fields, entry through the provider portal, and status confirmation |
+| HIMBEER / Berlin mit Kind | Free course listings for suitable children's, parent, and family activities | Prepared fields for the course directory and status confirmation |
 
-Die Auswahl erfolgt pro Workshop. Nicht jeder Workshop gehört auf jeden Kanal.
-Neue Erinnerungen erzeugen nicht automatisch doppelte Kalendereinträge. Bestehende
-Einträge werden aktualisiert, wenn das der passende unterstützte Ablauf ist.
+Channels are selected per workshop. Not every workshop belongs on every channel.
+New reminders do not automatically create duplicate calendar listings. Existing
+listings are updated when that is the appropriate supported workflow.
 
-**Verifizierte Voraussetzungen und Grenzen:**
+**Verified prerequisites and limitations:**
 
-- Google unterstützt [Erstellen und Bearbeiten von Beiträgen](https://developers.google.com/my-business/content/posts-data).
-  Der Studio-Owner-Zugriff ist bestätigt; die separate
-  [API-Zulassung](https://developers.google.com/my-business/content/prereqs) ist noch offen.
-- Rausgegangen bestätigt [kostenlose Event-Einträge](https://zentrale.rausgegangen.de/)
-  und [externe Buchungslinks](https://rausgegangen-assist.freshdesk.com/support/solutions/articles/44002486114-kann-ich-einen-externen-ticketlink-hinterlegen-).
-  Das eigene Ticketing der Plattform ist für V1 nicht erforderlich.
-- HIMBEER beschreibt [kostenlose Kurseinträge und einmalige Workshops](https://berlinmitkind.de/anleitung-kurse/).
-  Das Kursverzeichnis ist vom redaktionellen Veranstaltungskalender zu unterscheiden.
-  Die Anleitung sieht für Kurseinträge keine eingebetteten Bilder vor.
-- Für Rausgegangen und HIMBEER wurde bislang keine passende öffentliche offizielle
-  Publishing-API verifiziert. Automatisches Veröffentlichen wird nicht zugesagt.
+- Google supports [creating and editing posts](https://developers.google.com/my-business/content/posts-data).
+  Studio owner access is confirmed; separate
+  [API approval](https://developers.google.com/my-business/content/prereqs) is still pending.
+- Rausgegangen confirms [free event listings](https://zentrale.rausgegangen.de/)
+  and [external booking links](https://rausgegangen-assist.freshdesk.com/support/solutions/articles/44002486114-kann-ich-einen-externen-ticketlink-hinterlegen-).
+  Its own ticketing service is not required for V1.
+- HIMBEER describes [free course listings and one-off workshops](https://berlinmitkind.de/anleitung-kurse/).
+  The course directory is separate from the editorial event calendar. Its guide
+  does not provide for embedded images in course listings.
+- No suitable public, official publishing API has been verified for Rausgegangen
+  or HIMBEER. Automatic publishing is not promised.
 
-Quellen für die Kanalauswahl wurden am 16.–17. September 2026 geprüft.
-Plattformbedingungen und technische Fähigkeiten müssen vor Integration erneut
-gegen die dann aktuellen offiziellen Informationen geprüft werden.
+Sources for channel selection were checked on September 16–17, 2026. Platform
+terms and technical capabilities must be checked again against current official
+information before integration.
 
-## 4. Nutzerablauf
+## 4. User workflow
 
-1. Lehrer öffnet einen vorhandenen Workshop und startet „Marketing erstellen“.
-2. Das System prüft die Eingangsdaten und empfiehlt passende Kanäle mit Begründung.
-3. Je Kanal erscheint ein geprüfter Entwurf mit geeignetem Veröffentlichungsweg,
-   fertigem Buchungslink und gegebenenfalls Bildvorschlag.
-4. Lehrer kann Text direkt bearbeiten, einen Änderungswunsch eingeben, eine
-   Variante oder ein anderes Bild wählen und Kanäle deaktivieren.
-5. Nach Prüfung wird die konkrete Fassung freigegeben.
-6. Google veröffentlicht automatisch; für andere Kanäle werden Felder kopiert und
-   Einreichung beziehungsweise Veröffentlichung anschließend bestätigt.
-7. Die Übersicht zeigt je Kanal Zeiten, Fehler, Wiederholungsmöglichkeiten und
-   die zuletzt veröffentlichte Fassung beziehungsweise den öffentlichen Link.
-8. Spätere Werberunden und Aktualisierungen beginnen bei den aktuellen Fakten und
-   bewahren die Historie bisheriger Veröffentlichungen.
+1. A teacher opens an existing workshop and starts "Marketing erstellen"
+   (create marketing content).
+2. The system validates the input and recommends suitable channels with explanations.
+3. Each channel shows a validated draft, the appropriate publishing route, a
+   complete booking link, and an image suggestion where applicable.
+4. The teacher can edit copy directly, enter a revision request, choose a variant
+   or another image, and disable channels.
+5. After review, the exact version is approved.
+6. Google publishes automatically; for other channels, fields are copied and
+   submission or publication is subsequently confirmed.
+7. The overview shows timestamps, errors, retry options, and the last published
+   version or public URL for each channel.
+8. Later marketing rounds and updates use current facts and preserve the history
+   of previous publications.
 
-Eine Anfrage an eine Redaktion oder ein abgesendetes Formular ist nicht automatisch
-eine Veröffentlichung. Der Status darf den tatsächlichen Kenntnisstand nicht übertreiben.
+An editorial inquiry or submitted form is not automatically a publication.
+The status must not overstate what is known.
 
-## 5. Bilder und Inhalte
+## 5. Images and content
 
-Dateinamen der Workshopbilder stehen bereits in Firestore. Die Dateien liegen in
-Ordnern der Lehrer-App und der Webseite. Der Bildpool katalogisiert geeignete
-vorhandene Bilder und ihre erlaubte Nutzung; eine Kopie aller Dateien ist nicht nötig.
+Workshop image filenames are already stored in Firestore. The files are in
+folders in the teacher app and website. The image pool catalogs suitable existing
+images and their permitted uses; copying all files is unnecessary.
 
-Themen wie Yoga, Meditation, Wellness, Kinder, Eltern-Kind, Massage und Studio
-helfen bei der Auswahl. Dasselbe Bild darf für mehrere Workshops verwendet werden,
-soweit seine Freigabe das erlaubt. Kanäle ohne Bildanforderung bleiben textbasiert.
+Topics such as yoga, meditation, wellness, children, parent-child activities,
+massage, and the studio help selection. An image may be reused for multiple
+workshops when its permissions allow it. Channels without image requirements
+remain text-based.
 
-Beispielhafte Änderungswünsche: „Bitte kürzer“, „Herzlicher formulieren“ oder
-„Betone, dass man auch alleine teilnehmen kann“, sofern diese Aussage belegt ist.
-Neue Fakten und stärkere Wirkversprechen dürfen dabei nicht entstehen.
+Example revision requests remain in the product's German language: "Bitte kürzer"
+(please shorten), "Herzlicher formulieren" (make it warmer), or "Betone, dass man
+auch alleine teilnehmen kann" (emphasize that people can attend on their own),
+provided that statement is supported. Revisions must not introduce new facts
+or stronger claims about benefits.
 
 ## 6. Tracking
 
-V1 umfasst kanalspezifische Links, eine einfache Klickerfassung und die Zuordnung
-zu vorhandenen bestätigten Buchungen. Die Webseite verwendet bereits Firebase
-Cloud Functions mit PayPal und Stripe. Diese Zahlungsabwicklung bleibt Grundlage.
+V1 includes channel-specific links, basic click recording, and attribution to
+existing confirmed bookings. The website already uses Firebase Cloud Functions
+with PayPal and Stripe. This payment processing remains the foundation.
 
-Benötigt werden mindestens Workshop-, Kampagnen-, Runden-, Kanal- und Variantenbezug
-sowie UTM-Werte. Die bestätigte Zuordnungsregel lautet:
+At minimum, links need workshop, campaign, round, channel, and variant references,
+plus UTM values. The confirmed attribution rule is:
 
-- Letzter gültiger Marketingklick für denselben Workshop, höchstens 90 Tage vor
-  der bestätigten Buchung; gerechnet ab der Buchung, nicht ab dem Workshoptermin.
-- Ein neuer gültiger Marketingklick für diesen Workshop ersetzt den vorherigen
-  und setzt eine neue Frist ab seinem Klickzeitpunkt.
-- Direkte Besuche überschreiben die Herkunft nicht und verlängern die Frist nicht.
-- Klicks für andere Workshops werden nicht übertragen. Ohne passenden Kontakt
-  bleibt die Herkunft unbekannt.
+- The latest valid marketing click for the same workshop, no more than 90 days
+  before the confirmed booking; measured from the booking, not the workshop date.
+- A new valid marketing click for that workshop replaces the previous one and
+  starts a new window from its click timestamp.
+- Direct visits do not overwrite the source or extend the window.
+- Clicks for other workshops are not transferred. Without a matching touchpoint,
+  the source remains unknown.
 
-Die 90 Tage sind ein konfigurierbarer Startwert passend zum Werbevorlauf von
-2–3 Monaten. Später kann der Wert anhand beobachteter Buchungsabstände überprüft
-werden. Wiedererkennung, Datenspeicherung und Einwilligung werden vor produktiver
-Erfassung konkretisiert; die 90 Tage legen keine Speicherdauer fest.
-V1 braucht eine prüfbare Auswertung, aber kein eigenes Analytics-Dashboard.
+The 90-day window is a configurable starting value matching the 2–3 month
+promotion period. It can later be reviewed using observed booking delays.
+Visitor recognition, data storage, and consent are defined before production
+tracking; the 90 days do not establish a data retention period. V1 needs
+verifiable reporting but does not require a dedicated analytics dashboard.
 
-## 7. Erfolg und Abnahme
+## 7. Success and acceptance
 
-**Bestätigte Zeitziele nach einmaliger Einrichtung:**
+**Confirmed time targets after initial setup:**
 
-- Ungefähr eine Minute aktive Arbeit pro automatisch veröffentlichbarem Kanal.
-- Maximal ungefähr drei Minuten pro Kanal mit manuellem Formulareintrag.
-- Maximal zehn Minuten aktive Arbeit für eine vollständige Werberunde eines
-  Workshops über alle ausgewählten Kanäle, einschließlich üblicher Textkorrekturen.
+- Approximately one minute of active work per automatically published channel.
+- At most approximately three minutes per channel requiring manual form entry.
+- At most ten minutes of active work for a complete marketing round for one
+  workshop across all selected channels, including typical copy corrections.
 
-Rechenzeit und Wartezeit externer Plattformen werden gesondert gemessen. Diese
-Werte sind Pilotziele, keine bereits nachgewiesenen Leistungsangaben.
-Texte sollen kaum Korrekturen benötigen. Mehr Teilnehmer sind das Geschäftsziel;
-bei wenigen Workshops ist die Entwicklung der Buchungen nur vorsichtig bewertbar.
+Processing time and waiting for external platforms are measured separately.
+These figures are pilot targets, not demonstrated performance claims. Copy
+should need few corrections. More participants are the business goal; with few
+workshops, changes in booking numbers must be interpreted cautiously.
 
-**Vorgeschlagene überprüfbare Abnahmekriterien:**
+**Proposed verifiable acceptance criteria:**
 
-- Referenzworkshops durchlaufen Datenprüfung, Kanalauswahl, Generierung und Review.
-- Pflichtfelder, Formate, bekannte Fakten und Preisfristen bestehen die vereinbarten
-  harten Prüfungen; konflikthafte Ergebnisse können nicht veröffentlicht werden.
-- Direkte Bearbeitung, LLM-Überarbeitung, Bildwechsel und Kanaldeaktivierung funktionieren.
-- Google kann mit freigeschaltetem Zugang einen freigegebenen Beitrag erstellen
-  und aktualisieren. Der manuelle Ausweichweg ersetzt dieses Integrationsziel nicht.
-- Rausgegangen- und HIMBEER-Einträge lassen sich vorbereiten, bestätigen und aktualisieren;
-  die tatsächliche Eintragungszeit wird mit passenden Workshops gemessen.
-- Teilfehler erhalten erfolgreiche Ergebnisse. Doppelklicks und Wiederholungen
-  verursachen keine unkontrollierten zusätzlichen Beiträge.
-- Mindestens ein kontrollierter Buchungsdurchlauf prüft die Zuordnung und die
-  einmalige Zählung trotz wiederholter Zahlungsbenachrichtigungen.
-- Gezielte Zuordnungsfälle prüfen die 90-Tage-Grenze, einen neueren Marketingklick,
-  einen direkten Folgebesuch und Klicks für einen anderen Workshop.
-- Eine kleine qualitative Referenzbewertung und ein dokumentierter Vergleich
-  zweier Promptstände zeigen, wie Änderungen beurteilt werden.
-- Der Pilot wird in der bestehenden Lehrer-App durchgeführt. Fehlende Zugänge
-  oder nicht getestete Funktionen werden als offen dokumentiert.
+- Reference workshops pass through input validation, channel selection,
+  generation, and review.
+- Required fields, formats, known facts, and price deadlines pass the agreed
+  hard checks; results with unresolved conflicts cannot be published.
+- Direct editing, LLM revision, image changes, and channel disabling work.
+- With approved access, Google can create and update an approved post. A manual
+  fallback does not replace this integration goal.
+- Rausgegangen and HIMBEER listings can be prepared, confirmed, and updated;
+  actual listing time is measured with suitable workshops.
+- Partial failures preserve successful results. Double-clicks and retries do
+  not create uncontrolled additional posts.
+- At least one controlled booking flow checks attribution and counting each
+  booking once despite repeated payment notifications.
+- Targeted attribution cases check the 90-day boundary, a more recent marketing
+  click, a later direct visit, and clicks for another workshop.
+- A small qualitative reference evaluation and a documented comparison of two
+  prompt versions demonstrate how changes are assessed.
+- The pilot runs in the existing teacher app. Missing access and untested
+  functionality are documented as outstanding.
 
-Konkrete Qualitätsgrenzen und der Umfang der Pilotstichprobe sind noch festzulegen.
+Specific quality thresholds and the pilot sample size remain to be defined.
 
-## 8. Später oder außerhalb von V1
+## 8. Later or outside V1
 
-- Kindaling: ausdrücklich auf später verschoben; Gebühren und separate Buchungswege
-  müssten vor Aufnahme geklärt werden.
-- visitBerlin: mögliche spätere kostenlose Ergänzung.
-- nebenan.de, Berlin.de, Instagram, Facebook und weitere Plattformen: keine
-  verbindlichen V1-Integrationen.
-- Facebook-Gruppen bleiben bei einer späteren Aufnahme manuell; keine Bots.
-- Zeitgesteuerte Erinnerungen, eigenständige Veröffentlichung ohne Freigabe,
-  autonome Browsersteuerung und Umgehung fehlender APIs.
-- Neue Workshopideen, Reels, Videos und fortlaufende neue Bildproduktion.
-- Paid Ads, Budgetoptimierung, automatisches Lernen aus Buchungen und großes Dashboard.
-- Große SaaS-Plattform, zusätzliche Mandantenverwaltung und Agent-Frameworks.
+- Kindaling: explicitly deferred; fees and separate booking flows would need
+  clarification before inclusion.
+- visitBerlin: a possible later free addition.
+- nebenan.de, Berlin.de, Instagram, Facebook, and other platforms: no committed
+  V1 integrations.
+- Facebook groups remain manual if added later; no bots.
+- Scheduled reminders, autonomous publishing without approval, autonomous browser
+  control, and workarounds for missing APIs.
+- New workshop ideas, reels, videos, and ongoing creation of new images.
+- Paid ads, budget optimization, automatic learning from bookings, and a large dashboard.
+- A large SaaS platform, additional tenant management, and agent frameworks.
 
-Die Architektur berücksichtigt spätere Erweiterungen durch kleine Kanaladapter,
-ohne diese Erweiterungen bereits in V1 zu implementieren.
+The architecture allows later extensions through small channel adapters without
+implementing those extensions in V1.
 
-## 9. Entwicklung und Dokumentation
+## 9. Development and documentation
 
-Zunächst werden diese Architektur- und Scope-Entwürfe gemeinsam geprüft und die
-verbindliche Grundlage im ersten Dokumentations-PR festgehalten. Offene Punkte
-werden entschieden oder ausdrücklich einem späteren Issue zugeordnet, bevor die
-jeweils davon abhängige Umsetzung beginnt.
+First, these architecture and scope drafts are reviewed together, and the agreed
+foundation is recorded in the first documentation PR. Open questions are resolved
+or explicitly assigned to a later issue before the implementation that depends
+on them starts.
 
-Die Entwicklung folgt einzelnen Issues mit klarer Abnahme, kleinen Änderungen,
-passenden Tests, Nutzerreview, Pull Request und Merge. Review-, Zustands- und
-Evaluationsregeln werden vor dem ersten vollständigen Generierungsablauf konkretisiert.
-Die Firebase-Anbindung wird früh mit einem kleinen Datenbeispiel geprüft, damit
-Integrationsannahmen nicht erst am Ende auffallen.
+Development follows individual issues with clear acceptance criteria, small
+changes, appropriate tests, user review, a pull request, and a merge. Review,
+state, and evaluation rules are clarified before the first complete generation
+flow. The Firebase integration is checked early with a small data example so
+that integration assumptions do not surface only at the end.
 
-README und weitere Dokumentation werden mit tatsächlichen Funktionen aufgebaut.
-Wenige begründete Architekturentscheidungen können später als ADRs ergänzt werden.
-Dieses Dokument ist keine Aufforderung, V1 in einem einzigen Schritt zu erzeugen.
+Project documentation, code comments, new issues, pull requests, and commit
+messages use English. Workshop content, generated marketing copy, and the
+teacher-facing interface use German; German example data is appropriate.
+Discussions and Python explanations with the project owner remain in German.
+
+The README and further documentation grow alongside actual functionality.
+A few justified architectural decisions may later be recorded as ADRs. This
+document is not an instruction to implement all of V1 in a single step.
