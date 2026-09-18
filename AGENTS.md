@@ -2,12 +2,12 @@
 
 ## Project phase and source of truth
 
-- The project is currently in the architecture and documentation phase. Do not
-  implement production code or scaffold the package without a subsequent task.
+- The minimal Python package foundation is implemented. V1 functionality and
+  integrations remain planned; implement them only through subsequent tasks.
 - Before making changes, read the relevant sections of
   [docs/architecture.md](docs/architecture.md) and [docs/v1-scope.md](docs/v1-scope.md).
-  Both are initially drafts for review. Do not treat open decisions as approved
-  or implemented.
+  They distinguish confirmed decisions, technical proposals, and open questions.
+  Do not treat open decisions as approved or implemented.
 - Explicit user instructions define the task. Do not ask again about settled
   decisions; resolve routine details within the authorized scope.
 

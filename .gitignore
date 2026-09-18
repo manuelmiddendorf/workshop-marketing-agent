@@ -1,0 +1,22 @@
+# Virtual environments
+.venv/
+.venv-*/
+venv/
+
+# Python caches and bytecode
+__pycache__/
+*.py[cod]
+
+# Build output and packaging metadata
+/build/
+/dist/
+*.egg-info/
+*.dist-info/
+
+# Local environment files; examples must contain placeholders only
+.env
+.env.*
+!.env.example
+
+# Keep local credentials in this directory
+/secrets/
