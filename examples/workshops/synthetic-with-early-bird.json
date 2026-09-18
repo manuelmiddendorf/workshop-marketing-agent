@@ -1,0 +1,25 @@
+{
+  "_id": "synthetic-familienyoga",
+  "_path": "MgEvents/synthetic-familienyoga",
+  "title": "Synthetisches Beispiel: Familienyoga im Herbst",
+  "date": "2026-11-29",
+  "time": "10:00-11:30",
+  "location": "Beispielstudio, Raum A",
+  "price": "36 € für eine erwachsene Person und ein Kind",
+  "short": "Gemeinsam bewegen und zur Ruhe kommen.",
+  "description": "<p>Kinder von 6 bis 9 Jahren üben gemeinsam mit einer erwachsenen Begleitperson.</p>\n<p>Für Mitglieder: Bitte beachtet die Hinweise im Mitgliederbereich.</p>",
+  "publicForNonMembers": true,
+  "allowNonMembers": true,
+  "publicContent": {
+    "short": "Eine gemeinsame Yogazeit für Kinder und ihre Begleitperson.",
+    "description": "<p>Kinder von 6 bis 9 Jahren und je eine erwachsene Begleitperson entdecken Bewegung &amp; Ruhe.</p><p>Der Preis gilt für eine erwachsene Person und ein Kind.</p>"
+  },
+  "earlyBird": {
+    "price": "28 € für eine erwachsene Person und ein Kind",
+    "until": "2026-11-15",
+    "limit": 6,
+    "note": "Frühbucherangebot für die ersten sechs Buchungen."
+  },
+  "imageJpg": "synthetic-familienyoga.jpg",
+  "tags": ["Workshop"]
+}

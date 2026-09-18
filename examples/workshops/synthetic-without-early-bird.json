@@ -1,0 +1,20 @@
+{
+  "_id": "synthetic-atemruhe",
+  "_path": "MgEvents/synthetic-atemruhe",
+  "titel": "Synthetisches Beispiel: Atem und Ruhe",
+  "datum": "2026-12-06",
+  "uhrzeit": "",
+  "location": "Beispielstudio, Raum B",
+  "price": "",
+  "capacity": 0,
+  "short": "Eine ruhige Auszeit mit Atemübungen.",
+  "beschreibung": "<p>Gemeinsam üben wir ruhiges Atmen &amp; bewusste Pausen.</p>\n<p>Bitte beachtet die Hinweise im Mitgliederbereich.</p>",
+  "publicForNonMembers": false,
+  "allowNonMembers": false,
+  "publicContent": {
+    "short": "",
+    "description": ""
+  },
+  "imageJpg": "",
+  "tags": ["Workshop"]
+}
