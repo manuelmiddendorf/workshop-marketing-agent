@@ -1,10 +1,11 @@
 # V1 scope: workshop-marketing-agent
 
-As of September 17, 2026. Status: **Draft for joint review**.
+As of September 18, 2026. Status: **Draft for joint review; package foundation implemented**.
 
 This document collects the requirements confirmed during the architecture
 discussion. The proposed technical design is in [architecture.md](architecture.md),
-with open details listed separately. V1 has not been implemented yet.
+with open details listed separately. Only the minimal Python package foundation
+is implemented; V1 functionality has not been implemented yet.
 
 ## 1. Product goal
 
@@ -191,10 +192,10 @@ implementing those extensions in V1.
 
 ## 9. Development and documentation
 
-First, these architecture and scope drafts are reviewed together, and the agreed
-foundation is recorded in the first documentation PR. Open questions are resolved
-or explicitly assigned to a later issue before the implementation that depends
-on them starts.
+The merged architecture and scope documentation records the agreed foundation
+and open questions. The minimal Python package foundation is implemented;
+remaining questions are resolved or explicitly assigned to a later issue before
+the implementation that depends on them starts.
 
 Development follows individual issues with clear acceptance criteria, small
 changes, appropriate tests, user review, a pull request, and a merge. Review,

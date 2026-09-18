@@ -1,11 +1,12 @@
 # Architecture: workshop-marketing-agent
 
-As of September 17, 2026. Status: **Draft for joint review**.
+As of September 18, 2026. Status: **Draft for joint review; package foundation implemented**.
 
 Confirmed product decisions are documented in [v1-scope.md](v1-scope.md).
-The technical design in this document is a proposal for later implementation.
-Open questions are explicitly marked. There is no production code or verified
-integration with the existing teacher app yet.
+Only the minimal installable Python package foundation is implemented, using
+Python 3.13 and Hatchling. The remaining technical design is a proposal for later
+implementation. Open questions are explicitly marked. There is no V1 business
+logic or verified integration with the existing teacher app yet.
 
 ## 1. Purpose and architectural principles
 
@@ -293,14 +294,14 @@ and repeated payment notifications.
 
 ## 12. Open questions and when to resolve them
 
-The documentation PR records the shared foundation and its open questions.
+The merged documentation records the shared foundation and its open questions.
 Each question is decided or verified before the implementation that depends on
-it. The minimal Python package foundation can be built independently of platform
+it. The minimal Python package foundation was built independently of platform
 access, tracking, and production Firebase integration.
 
 | Topic | Next step | Required before |
 | --- | --- | --- |
-| Python runtime | Select a supported Python version for the package and planned Firebase runtime | Defining the package foundation in the first implementation issue |
+| Python runtime | Python 3.13 is the chosen and verified package baseline; metadata uses `>=3.13`. Other Python versions and Firebase runtimes remain unverified | Verify the target runtime before Firebase integration |
 | Workshop data model | Inspect an anonymized example from the existing app, including early-bird deadlines, age information, and time zones | Defining the public workshop data models |
 | Concrete data mapping | Check field names, versioning, deadline semantics, booking status, permissions, and image paths in the existing app | Implementing the respective Firebase integration |
 | Execution | Proposal: short, separate server-side actions per channel; measure runtime and define behavior when a request is canceled or the app is closed | Integrating generation into the teacher app and promising background execution |
