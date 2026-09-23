@@ -54,8 +54,29 @@ depend on the channel.
 
 Early-bird data already exists as structured fields in Firestore. It is taken
 from those fields rather than inferred from the description. Deadlines must
-have an unambiguous interpretation as a timestamp with a time zone. The meaning
-of a deadline stored only as a date must be clarified during data mapping.
+have an unambiguous interpretation as a timestamp with a time zone. The owner
+confirmed that a date-only early-bird deadline includes the entire stated local
+day. Public checkout qualifies on successful payment; member bookings qualify
+on registration, with bank transfer handled independently. The exclusive cutoff
+is the start of the following local calendar day. The studio normally uses
+`Europe/Berlin` and EUR; these are explicit configuration defaults, with workshop
+exceptions preserved. Stored types and authoritative registration/payment
+timestamps still need verification during data mapping. The
+[booking integration findings](booking-integration-findings.md) distinguish
+existing early-bird display logic from outstanding booking integration work.
+
+Prices normally apply per person. Parent-child yoga has a base price for one
+adult and one child, with additional people available during checkout. Pair
+pricing is a possible future case. Early-bird places are normally limited.
+Local parent-child booking code counts one family booking, including extra
+people, as one quota unit; person capacity is counted separately. This does not
+establish quota units for other workshops or verify live counts. The
+[workshop contract](workshop-data-contract.md#business-rules-confirmed-by-the-owner)
+records these confirmed rules and the remaining representation questions.
+
+Member and public/non-member descriptions are separate in the existing workshop
+data. External marketing uses public copy; missing public copy does not authorize
+automatic substitution of member text. Original versions remain preserved.
 
 The detailed original copy remains unchanged unless a teacher explicitly starts
 a revision. Page elements such as "Vergangen" (past) and HTML encodings are cleaned
@@ -197,7 +218,13 @@ The website integration records a campaign visit and links it to the existing
 booking flow where possible. A booking confirmed on the server is counted once;
 starting checkout or returning from a payment page is not sufficient. Repeated
 payment notifications must not produce additional bookings. Cancellations must
-not appear as new bookings. Existing PayPal and Stripe payment logic is reused.
+not appear as new bookings. Existing PayPal and Stripe payment logic is reused
+for public bookings only. Member places are booked at registration, followed by
+independent bank transfer; a later payment must not count as another booking.
+The existing member-facing payment-receipt reminder is intentional and remains.
+It does not require staff to confirm payment for booking, capacity, applicable
+early-bird usage, or attribution to count. A member registration establishes a
+booking, not evidence that the transfer has arrived.
 
 The confirmed default attribution window is **90 days before the confirmed
 booking**, scoped to the booked workshop. Credit goes to the latest recorded
@@ -303,7 +330,7 @@ access, tracking, and production Firebase integration.
 | --- | --- | --- |
 | Python runtime | Python 3.13 is the chosen and verified package baseline; metadata uses `>=3.13`. Other Python versions and Firebase runtimes remain unverified | Verify the target runtime before Firebase integration |
 | Workshop data model | Review the [proposed input contract and source evidence](workshop-data-contract.md), resolve its model questions, and confirm supported shapes with a sanitized real example; current JSON examples are synthetic reconstructions | Defining the public workshop data models |
-| Concrete data mapping | Check field names, versioning, deadline semantics, booking status, permissions, and image paths in the existing app | Implementing the respective Firebase integration |
+| Concrete data mapping | Check field names, versioning, stored date/price types, route-specific registration/payment event and timestamp, quota units/counts, permissions, and image paths; apply the confirmed studio defaults and full-day deadline rule | Implementing the respective Firebase integration |
 | Execution | Proposal: short, separate server-side actions per channel; measure runtime and define behavior when a request is canceled or the app is closed | Integrating generation into the teacher app and promising background execution |
 | Tracking | The 90-day window and workshop scope are decided; define identification, consent, retention, deletion, and what counts as a booking | Implementing and storing attribution linked to individual visitors |
 | Evaluation | Define the scoring rubric, quality threshold, and acceptable correction effort | Evaluating the first generated copy and comparing prompt versions |
