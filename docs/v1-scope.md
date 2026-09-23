@@ -7,6 +7,13 @@ discussion. The proposed technical design is in [architecture.md](architecture.m
 with open details listed separately. Only the minimal Python package foundation
 is implemented; V1 functionality has not been implemented yet.
 
+**Pilot update, September 24, 2026 (owner-reported):** the website and booking
+routes have been updated; only Mal-Yoga on October 18, 2026 initially uses the new
+booking route. Other workshops retain their existing workflows. This is not
+verification of deployment or marketing functionality. The
+[pilot input proposal](workshop-data-contract.md#mal-yoga-pilot-input-proposal)
+separates current public-page evidence from missing integration prerequisites.
+
 ## 1. Product goal
 
 Existing workshops at a yoga studio should be promoted reliably with little

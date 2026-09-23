@@ -1,11 +1,15 @@
 # Workshop booking integration findings
 
-As of September 18, 2026. Status: **Local code inspection; integration work pending**.
+September 18, 2026 baseline. Status: **Historical local inspection, not current production verification**.
 
 Task 2a adds the [shared booking contract](workshop-booking-contract.md): confirmed
 counting and review rules, proposed records/transitions, and remaining questions.
-It is not an implemented backend contract. Earlier inspection evidence below is
-retained; the member deadline correction was rechecked after Task 1.
+The booking contract separately records later Task 9 implementation status.
+Earlier inspection evidence below is retained; the member deadline correction
+was rechecked after Task 1. For the September 24 owner-reported October Mal-Yoga
+pilot and narrowly verified current inputs, see the
+[pilot input proposal](workshop-data-contract.md#mal-yoga-pilot-input-proposal).
+The follow-up list below is historical, not a fresh list of missing backend work.
 
 ## Confirmed booking rules
 
@@ -31,8 +35,8 @@ The owner clarified that the two workshop booking routes intentionally differ:
   arrives later. Genuinely late success for an early-bird quote requires review;
   the usual goodwill acceptance keeps the paid amount without surcharge, remains
   early bird, and consumes the applicable shared units exactly once. No automatic
-  refund or additional charge. Room capacity must be respected; authority to
-  exceed exhausted early-bird quota remains unresolved in the shared contract.
+  refund or additional charge. The later Task 9 rule authorizes no quota override:
+  exhausted or unknown room/quota keeps the case in review.
 
 This clarification replaces the earlier blanket payment-success requirement.
 Booking and payment are distinct facts; a counted member booking does not prove
