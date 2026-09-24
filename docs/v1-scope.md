@@ -7,6 +7,13 @@ discussion. The proposed technical design is in [architecture.md](architecture.m
 with open details listed separately. Only the minimal Python package foundation
 is implemented; V1 functionality has not been implemented yet.
 
+**Pilot update, September 24, 2026 (owner-reported):** the website and booking
+routes have been updated; only Mal-Yoga on October 18, 2026 initially uses the new
+booking route. Other workshops retain their existing workflows. This is not
+verification of deployment or marketing functionality. The
+[pilot input proposal](workshop-data-contract.md#mal-yoga-pilot-input-proposal)
+separates current public-page evidence from missing integration prerequisites.
+
 ## 1. Product goal
 
 Existing workshops at a yoga studio should be promoted reliably with little
@@ -25,8 +32,29 @@ training a custom model is not a V1 goal.
   teacher app. The existing web interface can retain its implementation language.
 - Workshop data, including early-bird information, comes from Firestore. The
   integration maps it into the package's independent data model.
+- Workshops normally use Berlin local time (`Europe/Berlin`) and EUR. These are
+  explicit studio defaults; any workshop exceptions must be preserved.
+- Prices normally apply per person. Parent-child yoga's base price covers one
+  adult and one child, with additional people available during checkout. Pair
+  pricing has not been used yet but may be needed in the future.
+- Early-bird deadlines include the entire stated local day. Eligibility requires
+  availability within any applicable discounted-place quota and the respective
+  qualifying event: successful payment on the public website, registration in
+  the member area. Member places are booked immediately at registration; payment
+  follows independently by bank transfer, without Stripe or PayPal. Quotas are
+  normally limited. Local parent-child booking code counts
+  one family booking including extra people as one quota unit, separately from
+  person capacity. Other workshop units and authoritative payment/counting data
+  still need verification; see the
+  [booking-code findings](workshop-data-contract.md#parent-child-booking-code-inspection).
+- Preserve the member area's existing payment-receipt reminder to encourage
+  prompt bank transfer. Member bookings, capacity use, applicable early-bird
+  usage, and attribution count at registration without separate staff
+  confirmation of payment. Counting a booking does not mark it as paid.
 - The detailed original copy is preserved unless a revision is explicitly
   requested. Channel copy is derived from it in a warm, clear, and suitable style.
+- Workshop data contains separate member and public/non-member descriptions.
+  External marketing uses public copy, with no automatic fallback to member copy.
 - Conflicts between structured data and text must be resolved before affected
   content is published.
 - Teachers can fully manage the workshops they have access to and approve posts
@@ -115,8 +143,10 @@ or stronger claims about benefits.
 ## 6. Tracking
 
 V1 includes channel-specific links, basic click recording, and attribution to
-existing confirmed bookings. The website already uses Firebase Cloud Functions
-with PayPal and Stripe. This payment processing remains the foundation.
+existing confirmed bookings. The public website already uses Firebase Cloud
+Functions with PayPal and Stripe. Member bookings remain registration-based,
+with independent bank transfer. Preserve both booking routes; see the
+[booking integration findings](booking-integration-findings.md).
 
 At minimum, links need workshop, campaign, round, channel, and variant references,
 plus UTM values. The confirmed attribution rule is:

@@ -1,21 +1,124 @@
 # Workshop source data and proposed input contract
 
-As of September 18, 2026. Status: **Proposal for review; no models or mapping implemented**.
+As of September 24, 2026. Status: **Confirmed business rules; proposed marketing input; no models or mapping implemented**.
 
 This document prepares the independent workshop input described in
 [architecture section 3](architecture.md#3-data-and-factual-accuracy) and
 the [confirmed V1 scope](v1-scope.md#2-confirmed-decisions). Field names below
 are proposals, not an approved schema.
 
+The [shared booking contract](workshop-booking-contract.md) records the later
+Task 2a decisions on shared quotas, counting units, payment timing and goodwill,
+with proposed booking records and transitions. This document remains the marketing
+input/source mapping; it does not assign booking implementation to the Python package.
+
+## Mal-Yoga pilot input proposal
+
+**Owner-reported progress (September 24, 2026):** the website and booking routes
+have been updated. Initially, only **Mal-Yoga on October 18, 2026** uses the new
+booking route. Other workshops retain their existing workflows. This report is
+not a deployment check. Booking logic remains in the existing applications;
+marketing consumes public content and verified aggregates, without registrations.
+
+This section proposes the concrete pilot representation illustrated by
+[the sanitized Mal-Yoga example](../examples/workshops/mal-yoga-2026-10-18.json).
+It narrows the broader mapping below without approving a Firebase schema.
+The September 18 findings remain historical evidence, not a current system audit.
+
+### Pilot evidence, collected September 24, 2026 (Europe/Berlin)
+
+| ID | Source and snapshot | What was technically verified; limits |
+| --- | --- | --- |
+| P1 | [Public pilot page](https://www.middendorf-yoga.de/workshops/mal-yoga-workshop-2026-10-18/), HTTP 200; HTML retrieved at `2026-09-23T22:28:42Z` (September 24 locally), SHA-256 `9e65414a4f91e8ac7f130155b9138ae4e39b394b3a8f022db9554aaeb2a24196` | Canonical link at line 15; Event JSON-LD at 23; public route ID at 32; title/summary/image at 33; full description at 33–70; booking facts at 70. Browser display also inspected read-only. These are page observations, not a sanitized database document or a booking test. |
+| P2 | Local `myfunctions/functions/workshops/publicWorkshopData.js`, SHA-256 `5d3622a7ea5504d4f43a04e6ad78ba7e4426eb36d93abf2f4dd15ff2963268a7` | `resolvePublicShort` / `resolvePublicDescription` (146–162), `resolveEarlyBird` (164–187), `mapPublicWorkshop` (190–241). Local mapping evidence only; does not establish which code produced P1. |
+| P3 | Local `myfunctions/functions/workshops/bookingPersistence.js`, SHA-256 `4f4e58745f58a7b666e36c37e3ada5a2e6d8f4d4992ccc5a4be3770fcb7d0c09` | `remainingWorkshopAllocation` (37–42) checks schema version, matching workshop ID, known state and nonnegative integer limits/usage. Returns separate capacity and early-bird remainders; supplies no observation time or public marketing interface. Not executed. |
+
+P2 and P3 were **untracked** in the local checkout at Git HEAD
+`25d7b42a806903ab3be1b800fcd995a35bd7bb9f`; the hashes identify the inspected
+files, which are not contained in that commit. No application files were changed,
+dependencies installed, production Firestore accessed, or bookings/payments made.
+No sanitized pilot database document or verified live aggregate was available.
+The example retains selected P1 evidence; it is not the complete HTML snapshot.
+
+### Compact pilot mapping
+
+All names in the last column are **proposals**, using plain JSON values. P1
+verifies displayed values; P2 describes accepted local code shapes, not actual
+stored types. Confirmed defaults and counting rules come from the
+[owner decisions below](#business-rules-confirmed-by-the-owner) and the
+[booking contract](workshop-booking-contract.md#2-confirmed-rules-and-counting).
+
+| Input | Available source fields/types and evidence status | Proposed independent representation; unknown/conflict handling |
+| --- | --- | --- |
+| Stable and cross-route identity | P1 `data-workshop-id="malws-copy"` (string). P2 takes `id` and derives `seoPath`; no cross-route guarantee observed. | `identity.workshop_id`, `public_route_id`, `member_route_id`: opaque strings or null. Preserve observed `public_route_id`; canonical/member IDs remain null and `cross_route_status` is `unverified`. Do not identify a workshop by title/slug or assume `malws` and `malws-copy` identify the same occurrence. Verify the binding before associating aggregates. |
+| Source version | P2 `lastModified` serializes `updatedAt`, `modifiedAt`, or `createdAt`; no full writer coverage verified. P1 has a retrievable page snapshot only. | `source_version`: opaque string or null. Null here. Keep the P1 hash in `provenance`, never promote it or retrieval time to a workshop version. Conflicting revisions block a usable snapshot. |
+| Title and public copy | P1 title (text), short paragraph and complete description (HTML). P2 maps `title`/`name`, `publicContent.short`/`.description` and public aliases, but also falls back to `short`/`description`. | `content.title`, `public_summary_html`, `public_description_html`: original strings, including markup/line breaks. The example copies the P1 blocks exactly. `public_copy_status: source_selection_unverified` records that their upstream audience selection is unknown. No automatic member-copy fallback; retain differing originals separately and block affected content on factual conflicts. Public display alone is not permission to publish or proof of the selected source field. |
+| Date, times, zone, exceptions | P1 text: October 18, 11:00–17:30; JSON-LD strings `2026-10-18T11:00:00+02:00` and `2026-10-18T17:30:00+02:00`. P2 accepts `date`/`datum` and display `time`/`uhrzeit`. | `schedule.local_date` (`YYYY-MM-DD`), `start_time`/`end_time` (`HH:MM`), original `schedule_text`; `time_zone: Europe/Berlin` from `studio_configuration`, consistent with P1 offsets. `explicit_exceptions` is null until source review, not an assertion of no exceptions; later use a list of original exception statements. Invalid dates, ambiguous times, contradictory offsets or exceptions need review; invent no overnight rollover. |
+| Price, currency and pricing unit | P1 says `130 € pro Person`; JSON-LD `offers.price: "130.00"`, `priceCurrency: "EUR"`. P2 distinguishes `regularPriceEUR` from a possibly discounted `priceEUR`, parsed from numbers/text. | `pricing.displayed_price` preserves the observed amount as exact decimal string `"130.00"`; `currency: EUR` and `pricing_unit: person` are page-evidenced. `regular_price` remains null until classification is verified. Both price fields use a decimal string or null, never binary float; unknown is not free. Compare structured amounts with original copy; do not infer family/pair pricing. Conversion from booking minor units must be lossless. |
+| Early bird: price, deadline, restrictions, quota | No offer shown in P1; absence from the page does not verify absence of an offer. P2 reads `earlyBird.price`, `.until`, `.note`, `.limit` and derives remaining units from arrays. Actual pilot values/types are unverified. | `early_bird.status`: `unknown`, `absent` (verified absence only), or `present`. Nullable `price` uses the same decimal convention/currency/pricing unit; `final_date` is a local date, `cutoff_exclusive` an offset timestamp, `restriction_text` unchanged text, `quota_limit` a nonnegative integer. All are null here. `quota_unit: discounted_person` applies to this per-person general workshop if an offer exists; it asserts no limit/remaining units. Full final local day, shared pools and route-specific qualifying events remain settled rules. Missing terms block discount claims; zero is never an unlimited default. |
+| Image | P1 displays the string URL ending `/dein/static/images/malws.jpeg`; P2 resolves `imageJpg` or URL aliases (140–143). | `image.reference` retains the observed URL. `public_use_status: displayed_on_studio_page_only`; `marketing_permission` (boolean/null) and required `credit` (string/null) remain unknown. Display does not prove rights for other channels, dimensions or attribution requirements. Conflicting selections require review. |
+| Canonical booking page | P1 canonical and Event offer URL agree on the October workshop page. A public form is present; submission was not tested. | `booking_url`: the verified HTTPS workshop-page URL. It is a destination, not proof of working checkout, deployment, or workshop identity across routes. Never substitute a payment/provider link; missing or conflicting destinations block a booking call to action. |
+| Availability origin, association and units | P1 displays `Freie Plätze: 5`, descriptive maximum 6, and JSON-LD `InStock`. P2 `freeSlots` and `earlyBird.remaining` subtract registration-array lengths; those are not authoritative shared aggregates. P3 returns integer/null `capacityRemaining` and `earlyBirdRemaining` for a matching `workshopId`. No live P3 record was read. | `availability.source` (resolvable aggregate reference), `workshop_id`, `observed_at` (offset timestamp), `remaining_persons` and `remaining_early_bird_units` (nonnegative integers) are all null. `person_unit: person`, `early_bird_unit: discounted_person` are required units, not verified source units. A `verified` status requires a trusted aggregate with matching identity, both routes covered, explicit units and source observation time; partial unknowns cannot support claims about those counts. No arithmetic on P1 or participant lists. |
+| Freshness | P1 retrieval time is known; aggregate observation time and refresh policy are not. P3 supplies neither. | `availability.status`: `unknown`, `verified`, or `stale`; `max_age_seconds`: agreed positive integer or null. Null here blocks availability claims. Verify source/time/identity/units and age at use; stale, future-dated, conflicting or unknown evidence is not zero, unlimited, or available. P1's count stays solely in historical `provenance`, never in usable availability. |
+
+The example is a **sanitized reconstruction from verified public-page evidence**,
+not a verified source document, accepted model instance, or ready marketing input.
+`provenance.kind`, source URL, retrieval time and hash describe that reconstruction;
+`source_document_reviewed: false` and `gaps` state its limits. The observed count
+of five and advertised maximum of six are historical display evidence only, not
+ongoing availability guarantees. German public copy is preserved without edits.
+No member-only source was copied; participant records, private contacts,
+credentials and payment data are absent.
+
+### Prerequisites for the next input-validation issue
+
+Decide the small provisional contract above before writing models: required
+fields for a usable input versus an incomplete evidence example; explicit
+unknown/invalid/conflict diagnostics; acceptance of original HTML with separate
+public-copy suitability; decimal money, local schedule precision and offer states;
+and the required availability evidence/freshness policy. Unknown values may be
+retained, but must not pass as supported price, discount or availability claims.
+No new agreement on Berlin/EUR defaults, person pricing, shared pools or the
+full-day deadline is needed.
+
+Either obtain a sanitized pilot document to validate supported source shapes, or
+explicitly scope that next issue to this provisional independent representation
+with offline examples and no claim of Firestore compatibility. The exact source
+identity/version, public-copy selection, regular/early-bird terms and exception
+review remain prerequisites for accepting a **real pilot input**, even if model
+validation can first be built against the provisional representation.
+
+### Later integration work
+
+Verify the stable `malws-copy` binding to member/public routes and all relevant
+writers, source versioning, content selection and authoritative pricing. Obtain
+an aggregate interface with shared-pool coverage, declared units, workshop ID,
+observation time and refresh guarantees; verify image rights/credits and explicit
+exceptions. These are narrow integration prerequisites, not requests here for a
+deployment audit, migration, availability calculation, booking changes or marketing
+implementation. The earlier integration findings must not be treated as proof
+that these checks have already passed for October.
+
 ## Evidence and limits
 
 - **Confirmed requirements:** preserve original copy, keep missing facts unknown,
   and resolve conflicts before publishing affected content. The architecture
   records structured early-bird data as existing project knowledge.
+- **Owner-confirmed business rules:** the September 18 clarification below defines
+  studio defaults, price scope, early-bird eligibility, and separate member/public
+  descriptions. It does not verify stored field types or payment implementation.
 - **Observed application code:** static, read-only inspection of
   `msn/src/components/Workshops.vue`. The application was not run. Editor defaults,
   accepted values, preview fallbacks, and save operations do not establish which
   fields or types occur in stored documents.
+- **Observed booking code:** read-only inspection of local
+  `myfunctions/functions/kinderYoga` and the separate `workshops` booking path on
+  September 18. Parent-child quota counting is described below. The functions
+  were not run, and the deployed version and live counts were not verified.
+- **Observed website and member code:** subsequent inspection traced the public
+  website export/payment path and the member registration/bank-transfer path.
+  See the [booking integration findings](booking-integration-findings.md) for
+  evidence and gaps; member bookings do not require online payment.
 - **Verified document data:** none. No sanitized real workshop document was
   supplied or reviewed, and production Firestore was not accessed.
 - **Reconstructed examples:** the two JSON files below contain invented German
@@ -29,9 +132,57 @@ file. Its 3,970-line local snapshot had SHA-256
 References below are local snapshot references, not repository permalinks.
 No teacher-app files were changed.
 
+## Business rules confirmed by the owner
+
+The owner clarified the following rules on September 18, 2026:
+
+- **Studio defaults:** workshops normally use Berlin local time, including summer
+  and winter time, and euro prices. Represent these defaults as explicit studio
+  configuration (`Europe/Berlin`, `EUR`). They are not values discovered in a
+  source field. Preserve and review any explicit workshop exception.
+- **Price scope:** prices normally apply per person. For parent-child yoga, the
+  base price covers one adult and one child; additional people can be added during
+  checkout. Do not present that base price as a price per individual or assume
+  extra people are included for free. Pair pricing has not been used yet but is
+  a possible future case; do not describe it as existing source data.
+- **Early-bird deadline:** the stated final calendar day is fully included.
+  On the public website, successful payment is the qualifying event, not checkout
+  start. In the member area, registration books the place immediately; payment
+  follows by bank transfer independently. The owner's later clarification
+  replaces the earlier blanket payment-success criterion. The full-day rule
+  implies an exclusive cutoff for ordinary eligibility at the start of the next
+  local calendar day. Authoritative event timestamps still need verification.
+- **Member payment workflow:** preserve the existing payment-receipt reminder;
+  the owner uses it to encourage prompt bank transfer. Registration already
+  counts as a booking and uses capacity and any applicable early-bird quota.
+  No separate staff confirmation of transfer receipt is required. The reminder
+  is not a payment-status check, and registration alone does not establish that
+  a member has paid.
+- **Shared quota and capacity:** member/public bookings for the same workshop
+  always share early-bird quota and person capacity. General workshops consume
+  one discount unit per discounted participant; parent-child bookings consume one
+  per family including extras, while capacity counts every person. These Task 2a
+  decisions replace the earlier uncertainty about other units and channel pools.
+  Ordinary eligibility requires applicable quota availability. Exact limits and
+  authoritative usage still need integration evidence; defaults do not establish them.
+- **Late notifications and goodwill:** payment-success time controls public
+  eligibility; timely success remains timely when notification arrives later.
+  Genuinely late success for an early-bird quote requires review. Usual goodwill
+  acceptance keeps the paid amount without a surcharge, remains early bird, and
+  consumes the applicable units exactly once. Do not automatically refund or
+  request extra payment. Task 9 authorizes no quota override: exhausted or unknown
+  room/quota keeps the case in review, as detailed in the booking contract.
+- **Separate audiences:** workshop data contains different descriptions for
+  members and for the public/non-members. External marketing uses the public
+  description. Preserve member copy separately; do not automatically substitute
+  it when public copy is missing. Text selection is separate from approval to publish.
+
+These confirmations do not approve every proposed field name, validation rule,
+or representation below. No sanitized real document has been reviewed yet.
+
 ## Source evidence
 
-All references use the inspected `msn/src/components/Workshops.vue` snapshot.
+References S1–S10 use the inspected `msn/src/components/Workshops.vue` snapshot.
 Ranges are inclusive; the function names also help locate the code after edits.
 
 | ID | Lines | Observed code |
@@ -52,6 +203,52 @@ evidence of an editor convention, not a string-only production constraint.
 No structured audience, age, currency, time-zone, or separate start/end fields
 were identified in this component; their absence elsewhere is not established.
 
+## Parent-child booking code inspection
+
+The following references describe the local `myfunctions/functions` files inspected
+on September 18, 2026. `msn/myfunctions` points to that same directory. No Git
+revision was available for this folder. These are local code observations, not
+evidence of deployed behavior, live availability, or approved changes to billing.
+
+| Source file | Lines | Observed behavior |
+| --- | --- | --- |
+| `kinderYoga/KYStripeWebhook.js` | 58–89; 212–235; 274–285 | Processes `checkout.session.completed` for a pending registration. For `single` or `bundle3`, increases `earlyBirdQuotaUsed` by exactly one if the current phase is early bird and a numeric quota exists, then marks the registration paid in the transaction. Extra-person counts do not multiply the quota increment. |
+| `kinderYoga/KYCapturePayPalOrder.js` | 110–119; 148–162; 316–365 | Requires PayPal capture status `COMPLETED` and a pending registration; uses the same one-per-family quota increment and paid transition. |
+| `kinderYoga/KYCreateAddonBooking.js` | 76–80; 138–169 | Later extra participants become an `addon` registration linked to a paid/confirmed parent. That booking type is excluded from the quota increment in both payment handlers. |
+| `kinderYoga/common.js` | 140–162; 203–225 | Single-booking price is the base price plus separate child/adult add-on charges. Capacity counts two base people plus extras; an `addon` counts only its extra people. |
+| `kinderYoga/KYBookWithPass.js` | 172–215 | Redeeming an existing pass can also consume one early-bird quota unit for the course and creates a confirmed registration without a new payment. |
+
+Thus, an eligible family booking with two adults and two children consumes **one
+early-bird quota unit and four person-capacity places**. Adding people later
+does not consume another quota unit. Remaining discounted family bookings and
+remaining person-capacity places must stay distinct in marketing data and copy.
+
+Several integration details remain separate from this confirmed counting unit:
+
+- `KYCreateBooking.js` (285–315) creates a pending registration without updating
+  the quota. The payment handlers update it later; they recompute eligibility
+  using their processing time (`new Date()`), not a recorded payment-success
+  timestamp. A price/phase change between checkout creation and processing can
+  cause their price check to reject the update after payment
+  (`KYStripeWebhook.js`, 153–181; `KYCapturePayPalOrder.js`, 258–287).
+- `common.js` (50–69) compares the current instant with the stored
+  `earlyBirdUntil`. It does not extend that value to the end of a Berlin calendar
+  day. Full-day eligibility depends on how that timestamp is written and still
+  needs verification against the owner's rule.
+- Pass redemption is an existing alternative to a new payment. Bundle pricing
+  also has separate rules (`common.js`, 90–137). These historical implementation
+  observations do not establish a complete mapping of every pass/bundle case to
+  the confirmed counting rules, or imply that each consumed unit represents a
+  new payment. The Stripe handler uses the completion event above
+  without an explicit `payment_status` check; its checkout currently allows only
+  cards (`KYCreateStripeCheckout.js`, 99–101). This inspection is not a complete
+  payment-success audit.
+- The general workshop path is separate: `workshops/WSCreateBooking.js` (60–89)
+  reads a price from `workshops/catalog.js` and writes `workshopRegistrations`.
+  It does not read the editor's `MgEvents.earlyBird` fields or update this quota.
+  Parent-child handlers instead use `KinderYoga` and `registrations`. Their field
+  names and counting rule must not be silently applied to all `MgEvents` records.
+
 ## Proposed field mapping
 
 Representations use ordinary strings, numbers, booleans, lists, and records;
@@ -67,13 +264,13 @@ class. Text and raw evidence remain unchanged; normalized facts are separate.
 | Original description and summary | `description`, `beschreibung`, `text`; `short`, `summary`, `info` (S1, S2). HTML is rendered for description and `info` (S10). Defaults are strings; generic JSON editing permits other shapes (S6). | Separate `original_description` and `original_summary`, retaining the selected original text, markup, and line breaks. Preserve alternate originals in source evidence when they differ. Missing text stays unknown; do not concatenate or rewrite aliases to hide a conflict. |
 | Content for public promotion | String defaults in `publicContent.short` and `.description`, plus flat public aliases. Boolean defaults `publicForNonMembers` and `allowNonMembers` are false; the preview also accepts true-like strings/numbers (S1, S2). | Separate `public_summary`, `public_description`, and an explicit public-eligibility value, with unknown distinct from false. Only reviewed public content is eligible for drafting. Public eligibility is not approval to publish. See the content rules below. |
 | Workshop date | Empty-string `date`; `datum` and `date` readers accept `toDate()`, truthy `seconds`, or values passed to Moment (S1, S3). The editor can produce `YYYY-MM-DD` strings (S4, S6). | `local_date` as a calendar date, retaining source precision. No midnight or instant is invented for a date-only value. Conflicting aliases, invalid values, and already-truncated timestamps remain unresolved. |
-| Start/end times and zone | Empty-string `time`, fallback `uhrzeit`; preview treats it as display text and appends `Uhr`. No separate endpoints or zone field identified (S1, S2). | Preserve `schedule_text`; propose separate `start_time`, `end_time`, and IANA `time_zone`, each unknown when unavailable. Do not infer an end time, overnight rollover, or zone. `Europe/Berlin` would be an explicit configuration proposal, not an observed value. |
+| Start/end times and zone | Empty-string `time`, fallback `uhrzeit`; preview treats it as display text and appends `Uhr`. No separate endpoints or zone field identified (S1, S2). | Preserve `schedule_text`; propose separate `start_time`, `end_time`, and IANA `time_zone`. Missing times remain unknown; do not infer an end time or overnight rollover. The integration may supply the confirmed studio default `Europe/Berlin` from configuration, preserving explicit exceptions and recording that the zone came from configuration rather than the source document. |
 | Location | Empty-string `location`; aliases `ort`, `studio`, `standort`. `studio`/`standort` also group list entries (S1–S3, S9). | `location_text`; optional structured address only from verified additional data. A studio code or grouping label is not an address. Missing location remains unknown. |
 | Audience and age | No dedicated fields identified. `tags` defaults to `["Workshop"]`; public access flags describe membership access, not age or audience (S1, S2). | Optional `audience_text`, `minimum_age`, `maximum_age`, and any required accompanying-adult condition. Carry an explicit, reviewed statement from suitable source content; do not infer suitability from a title, tag, image, or public flag. Numeric bounds stay unknown without evidence and confirmed units. |
 | Included services | No dedicated field identified; descriptive text may contain explicit statements (S1, S2). | Optional `included_services` from reviewed statements only. Missing evidence means unknown, not an empty list proving that nothing is included. |
-| Regular price and currency | `price` defaults to a string; `preis` is a fallback. `beitrag` defaults to an empty string but uses a numeric editor; `priceNumber` is also listed as numeric (S1, S2, S3, S6). No dedicated currency field identified. | Retain `regular_price_text`; propose money as an exact decimal amount string plus currency code and pricing scope (for example per person or pair). Bare amounts do not establish EUR. Missing price is not free; multiple rates or contradictory fields must be clarified before producing one amount. |
-| Early-bird price and deadline | `earlyBird` defaults to an object with string `price` and `until`. It is edited as JSON and merged with defaults on load (S1, S4, S6). No nested deadline parsing or cutoff calculation is identified. | Separate early-bird money and deadline from the regular price. Preserve raw deadline text; a date-only value is not a zoned expiry instant. Missing/empty object or partial offer is not proof that no offer exists. No discount claim without a verified price, currency, deadline, and applicable conditions. |
-| Early-bird restrictions | Numeric default `earlyBird.limit: 0` and string `earlyBird.note: ""`; no counting or eligibility semantics identified (S1, S6). | Preserve `restriction_text` and propose an optional offer quantity cap only after its meaning is confirmed. Zero does not prove unlimited places, no offer, or exhaustion. Unknown notes/caps do not authorize an unrestricted offer. |
+| Regular price and currency | `price` defaults to a string; `preis` is a fallback. `beitrag` defaults to an empty string but uses a numeric editor; `priceNumber` is also listed as numeric (S1, S2, S3, S6). No dedicated currency field identified. | Retain `regular_price_text`; propose money as an exact decimal amount string plus currency code and explicit pricing scope. The integration may supply the confirmed studio default EUR from configuration; a bare amount alone does not establish currency. Distinguish the usual per-person price from the parent-child base package (one adult and one child) and additional checkout items. Future pair pricing must remain distinguishable. Missing price is not free; multiple rates or contradictory fields require clarification. |
+| Early-bird price and deadline | `earlyBird` defaults to an object with string `price` and `until`. It is edited as JSON and merged with defaults on load (S1, S4, S6). Task 1 replaced the member view's browser-local calculation with a shared Berlin next-day cutoff and reactive refresh; the historical public export lacked a structured deadline (see booking findings). | Separate early-bird money and deadline from the regular price. Preserve raw deadline text. For ordinary eligibility with a valid date-only deadline, apply the confirmed full-day rule and zone to member registration or successful public payment. Delayed notification does not change payment time; goodwill is a recorded booking exception, not an extended offer. Missing/empty object or partial offer is not proof that no offer exists. No discount claim without verified price, currency, deadline, and applicable quota/conditions. |
+| Early-bird restrictions | Numeric default `earlyBird.limit: 0` and string `earlyBird.note: ""` (S1, S6). The member view treats nonpositive limits as uncapped and counts `angemeldet` plus `vorgemerkt`. The separate parent-child path uses `earlyBirdQuotaTotal`, `earlyBirdQuotaUsed`, and `earlyBirdQuotaRemaining` as described above. | Preserve `restriction_text`; limits and authoritative usage need evidence. Shared member/public quota and person capacity are confirmed: one unit per discounted general-workshop participant, one per parent-child family including extras; capacity counts all people. Member registration counts without transfer confirmation. Goodwill still consumes applicable early-bird units once. Current UI defaults do not approve zero as a normalized unlimited offer. Implementation and reconciliation remain open; unknown notes/caps do not authorize an unrestricted offer. |
 | Canonical booking URL | Empty-string `stripeUrl`/`paypalUrl` defaults and web-sync labels (S1, S8); `ctaLink`/`link` merely appear among legacy fields (S9). Separate tiles store a route name and workshop parameter (S8), not a canonical public URL. | `booking_url` from a verified public workshop booking page or an explicitly configured route. Payment-related URLs are not a substitute. Do not invent a website path from `_id` or use an unverified `ctaLink`. Missing canonical destination stays unknown and blocks a booking call to action. |
 | Images | `imageJpg`, `imageUrl` string defaults; preview and tiles also consume `image`. URLs, static paths, and filenames are handled. `imageWebp`/`imagePng` are only listed as legacy fields (S1, S7, S9). | `image_references` containing opaque references plus known metadata. Preserve references; do not imply that a filename is a public URL, an existing asset, or licensed for promotion. Selection conflicts and resolution/rights require verification. |
 | Availability and active status | `capacity: 0`, `isActive: true`, `active: true`, `archived: false` are defaults. `maxnr` is a legacy numeric field. Registration counts use several sources (S1, S6, S9). | Availability remains unknown without an authoritative, current aggregate. Do not equate defaults or active flags with available seats, subtract partial counts, or include registration arrays/participant details in the marketing input. Conflicting status flags need integration review. |
@@ -115,24 +312,34 @@ drafting from it. Review statements about audience, ages, included services, and
 pricing conditions against the source; absence does not justify new claims.
 Contradictions between prose and structured fields block affected content.
 
-**Unresolved time semantics:** normalization converts valid Date/`toDate()` values
+**Confirmed deadline rule and unresolved source mapping:** normalization converts valid Date/`toDate()` values
 to `toISOString().slice(0, 10)` and thereby discards time and offset information;
 other date display paths use Moment without an explicit zone (S3, S4, S6).
 German locale selection does not establish a time zone. Use the original source,
-not a reconstructed instant from editor text. For a date-only early-bird `until`,
-confirm the time zone, inclusive/exclusive cutoff, exact local cutoff time, and
-which event must occur by it (reservation, registration, or confirmed payment).
-Do not assume end-of-day, append UTC, or borrow the workshop start time. The
-meaning of `limit`, its counting source, and interaction with the deadline also
-remain unverified. No current/expired or remaining-discount-places claim follows
-from these editor fields alone.
+not a reconstructed instant from editor text. Berlin time is now an explicitly
+confirmed studio default. For a valid date-only early-bird `until`, the whole
+local day is included; ordinary eligibility requires member registration or
+successful public payment before the next local day starts. Preserve explicit workshop
+exceptions. Do not append UTC,
+borrow the workshop start time, or reinterpret a truncated timestamp as intact.
+The qualifying events and delayed-notification rule are settled: use actual
+payment-success time, not receipt/processing time. Authoritative timestamp sources
+and implementation still need verification. Goodwill acceptance records a separate
+exception without changing the original time or deadline. Shared quotas and both
+general/family units are confirmed; mapping and authoritative usage remain
+unverified. Task 1 fixes member display timing only. Editor fields alone do not
+prove current availability or a remaining number of discounted places. See the
+[booking contract](workshop-booking-contract.md#5-existing-data-and-ownership)
+for reconciliation and protection of booking state from teacher content saves.
 
 ## Synthetic source examples
 
 - [With early-bird information](../examples/workshops/synthetic-with-early-bird.json):
   invented family workshop, separate original/public copy, display price and
   nested early-bird strings with a numeric limit. Audience and ages occur only
-  in the invented copy. The date-only deadline remains unresolved as an instant.
+  in the invented copy. The raw date-only deadline contains no zone; a future
+  normalized input can use the confirmed studio configuration and full-day rule.
+  The invented note about six bookings does not establish a production quota unit.
 - [Without early-bird information](../examples/workshops/synthetic-without-early-bird.json):
   invented member-facing workshop using supported aliases, with blank time and
   price, default-shaped zero capacity, and no `earlyBird` field. Omission means
@@ -144,24 +351,29 @@ are invented. Missing `updatedAt` means no source version is established; no
 Firebase timestamp serialization is fabricated. Example image filenames are
 invented references, with no asset or usage-rights claim. No participant data,
 payment identifiers, payment URLs, or private contact details are included.
-Missing zone, canonical booking URL, and other facts are deliberately not filled
-with guessed fields. Editor normalization would add defaults, including an empty
+The source examples do not embed configured zone/currency defaults as if these
+were observed source fields. Missing canonical booking URL and other facts are
+not filled with guesses. Editor normalization would add defaults, including an empty
 early-bird object to the second example; that would not add source evidence.
 
 ## Questions before workshop models
 
-These are contract decisions for review, not decisions made by this PR:
+These technical contract decisions remain open after the business clarification:
 
 1. **Required fields and unknowns:** agree the smallest useful input, when identity
    and source version must be present, and how unknown facts differ from invalid
    or conflicting input and an explicitly confirmed absence of an offer.
 2. **Schedule and offer precision:** agree whether first models retain partial
    local dates/times and date-only offer deadlines or require resolved instants.
-   Agree money precision, pricing scope, and how unresolved offer restrictions
-   are represented without suggesting a usable discount.
-3. **Content boundary:** agree the separate original/public text representation
-   and explicit public-eligibility/unknown handling. Automatic fallback from
-   member-facing copy is not approved by this inspection.
+   Agree marketing money precision and representation of the confirmed pricing
+   scopes and units without suggesting a usable discount. The booking contract
+   proposes integer minor units for agreed amounts; the marketing input above
+   proposes exact decimal strings, requiring lossless mapping. Shared quotas,
+   general/family units, defaults, cutoff and qualifying events are settled.
+3. **Content representation:** separate member/public descriptions and use of
+   public copy for external promotion are settled. Choose the concrete text
+   fields and public-eligibility/unknown representation. Missing public copy does
+   not authorize automatic fallback to member-facing content.
 4. **Evidence for supported shapes:** review an offline, sanitized real workshop
    example, especially price scope and early-bird restrictions, before claiming
    compatibility with stored data. If models proceed before that evidence exists,
@@ -175,9 +387,14 @@ verified in the integration task:
 - Confirm document-key/metadata consistency, actual stored types and legacy
   aliases, writer coverage of `updatedAt`, and a reliable source-version token.
   Merge saves do not establish that obsolete alias fields disappear (S5).
-- Confirm the configured studio time zone, actual deadline cutoff and eligible
-  booking/payment event, currency and price scope, and early-bird counting rules.
-  These must be known before publishing claims that depend on them.
+- Apply the confirmed studio defaults, pricing scopes, full-day deadline, and
+  route-specific registration/payment rule. Verify explicit exceptions, actual
+  stored price/offer shapes, authoritative event timestamps, and implementation
+  of the confirmed shared counting rules and usage data.
+  Use the parent-child counting evidence above while verifying the deployed
+  version, current counts, pass/bundle cases, and the separate general-workshop
+  mapping. This verifies implementation of the settled business rules rather
+  than reopening those rules.
 - Resolve the public website route and canonical booking page, web-sync behavior,
   public access/status rules, and conflicts in actual public/member content.
 - Resolve studio codes/addresses, image locations, rights, attribution and

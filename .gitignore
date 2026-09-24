@@ -6,6 +6,7 @@ venv/
 # Python caches and bytecode
 __pycache__/
 *.py[cod]
+.pytest_cache/
 
 # Build output and packaging metadata
 /build/
