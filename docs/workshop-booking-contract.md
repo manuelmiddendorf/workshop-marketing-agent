@@ -3,6 +3,12 @@
 September 18, 2026 — **Confirmed business rules; proposed technical contract.
 Documentation only, not implemented or deployed by this task.**
 
+**September 24 status note:** this contract retains its earlier evidence and
+the later Task 9 implementation report below. The owner's new-route report is
+limited to Mal-Yoga on October 18, 2026; it does not migrate other workshops or
+verify deployment. See the [pilot marketing input proposal](workshop-data-contract.md#mal-yoga-pilot-input-proposal)
+for current public-page observations and remaining input prerequisites.
+
 ## 1. Evidence and scope
 
 - **Confirmed:** the owner's Task 2a decisions below govern booking and counting.

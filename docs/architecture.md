@@ -329,7 +329,7 @@ access, tracking, and production Firebase integration.
 | Topic | Next step | Required before |
 | --- | --- | --- |
 | Python runtime | Python 3.13 is the chosen and verified package baseline; metadata uses `>=3.13`. Other Python versions and Firebase runtimes remain unverified | Verify the target runtime before Firebase integration |
-| Workshop data model | Review the [proposed input contract and source evidence](workshop-data-contract.md), resolve its model questions, and confirm supported shapes with a sanitized real example; current JSON examples are synthetic reconstructions | Defining the public workshop data models |
+| Workshop data model | Review the [Mal-Yoga pilot input proposal](workshop-data-contract.md#mal-yoga-pilot-input-proposal) and its validation prerequisites; the October 18 pilot example reconstructs public-page evidence, with source identity/version and verified aggregates still missing. Earlier examples remain synthetic | Defining the public workshop data models |
 | Concrete data mapping | Check field names, versioning, stored date/price types, route-specific registration/payment event and timestamp, quota units/counts, permissions, and image paths; apply the confirmed studio defaults and full-day deadline rule | Implementing the respective Firebase integration |
 | Execution | Proposal: short, separate server-side actions per channel; measure runtime and define behavior when a request is canceled or the app is closed | Integrating generation into the teacher app and promising background execution |
 | Tracking | The 90-day window and workshop scope are decided; define identification, consent, retention, deletion, and what counts as a booking | Implementing and storing attribution linked to individual visitors |

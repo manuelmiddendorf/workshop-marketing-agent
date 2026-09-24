@@ -1,0 +1,75 @@
+{
+  "provenance": {
+    "kind": "sanitized_public_page_reconstruction",
+    "source_ref": "P1",
+    "url": "https://www.middendorf-yoga.de/workshops/mal-yoga-workshop-2026-10-18/",
+    "retrieved_at": "2026-09-23T22:28:42Z",
+    "html_sha256": "9e65414a4f91e8ac7f130155b9138ae4e39b394b3a8f022db9554aaeb2a24196",
+    "source_document_reviewed": false,
+    "displayed_remaining_places": 5,
+    "advertised_maximum_places": 6
+  },
+  "identity": {
+    "workshop_id": null,
+    "public_route_id": "malws-copy",
+    "member_route_id": null,
+    "cross_route_status": "unverified"
+  },
+  "source_version": null,
+  "content": {
+    "title": "Mal-Yoga-Workshop",
+    "public_summary_html": "Yoga &amp; Malen in einem stimmigen Flow: Loslassen, kreativ werden, Herzensausdruck spüren. Preis 130 € · Snacks inklusive · max. 6 Plätze.",
+    "public_description_html": "<p><strong>Mal-Yoga-Workshop – Kreativität, Flow &amp; Herzensausdruck</strong> 🎨🧘</p>\n\n<p>Kreativität ist nichts, das du „erst können“ musst – sie ist im Menschen angelegt. Oft wird sie nur leiser, wenn wir zu viel bewerten, zu schnell sein wollen oder uns selbst unter Druck setzen. In diesem Workshop schaffen wir einen ruhigen, warmen Raum, in dem du wieder spüren kannst, was in dir lebendig ist – und es ganz ohne Leistungsdruck ausdrücken darfst.</p>\n\n<p>Wir verbinden <strong>sanfte Yoga-Praxis</strong> und <strong>klassisches Malen</strong> zu einem stimmigen Prozess: Erst ankommen, den Körper öffnen, den Atem beruhigen – und dann in einen spielerischen, kreativen Flow eintauchen. Es geht nicht um ein „perfektes Bild“, sondern um das <strong>Machen</strong>: Dort wird das Herz warm, dort entsteht Weite, dort werden Zeit und Bewertung leiser.</p>\n\n<h3>Was dich erwartet</h3>\n<ul>\n  <li><strong>Sanfte Yoga-Sequenzen</strong> zum Loslassen, Zentrieren und Öffnen (für alle Level geeignet)</li>\n  <li><strong>Atem &amp; Wahrnehmung</strong>: nach innen lauschen, ohne direkt zu reagieren oder zu bewerten</li>\n  <li><strong>Geführte Malübungen</strong> (klassisch &amp; frei): Farben, Formen, Intuition – spielerisch, ohne „richtig“ oder „falsch“</li>\n  <li><strong>Flow statt Ergebnis</strong>: du darfst experimentieren, dich ausprobieren und deinem Ausdruck vertrauen</li>\n  <li><strong>Pausen &amp; Snacks inklusive</strong> – eine kleine Stärkung in den Pausen ist vorbereitet</li>\n  <li><strong>Mal-Materialien vor Ort</strong></li>\n</ul>\n\n<h3>Für wen?</h3>\n<p>Für alle, die sich nach <strong>Leichtigkeit, innerem Ausdruck und Kreativität</strong> sehnen – unabhängig davon, ob du „malen kannst“ oder nicht. Vorkenntnisse sind nicht nötig. Du brauchst nur Neugier, Offenheit und die Bereitschaft, dich auf einen kreativen Prozess einzulassen.</p>\n\n<h3>Rahmen &amp; Eckdaten</h3>\n<ul>\n  <li><strong>Datum:</strong> Sonntag, 18.10.2026</li>\n  <li><strong>Zeit:</strong> 11:00–17:30 Uhr (mit Pausen)</li>\n  <li><strong>Ort:</strong> Studio Charlottenburg</li>\n  <li><strong>Preis:</strong> 130 € pro Person</li>\n  <li><strong>Plätze:</strong> maximal 6 (kleine Gruppe, viel Ruhe &amp; Begleitung)</li>\n  <li><strong>Inklusive:</strong> Snacks in den Pausen &amp; Mal-Materialien vor Ort</li>\n</ul>\n\n<h3>Mitbringen</h3>\n<ul>\n  <li><strong>Bequeme Kleidung</strong>, die auch mal einen kleinen Farbtupfer abbekommen darf</li>\n</ul>\n\n<h3>Zum Schluss</h3>\n<p>Du wirst erleben: Kreativität ist nicht „Perfektion“ – sondern <strong>Kontakt</strong>. Kontakt mit deinem Körper, deinem Atem, deiner Intuition. Lass uns gemeinsam experimentieren, spielen und entdecken – und mit einem getragenen Flow-Gefühl nach Hause gehen. 💛</p>\n\n<p><strong>Anmeldung:</strong> Bitte melde dich über diese Workshop-Seite an. Wenn du Fragen hast, schreib uns gern kurz.</p>",
+    "public_copy_status": "source_selection_unverified"
+  },
+  "schedule": {
+    "local_date": "2026-10-18",
+    "start_time": "11:00",
+    "end_time": "17:30",
+    "schedule_text": "11:00–17:30 Uhr (mit Pausen)",
+    "time_zone": "Europe/Berlin",
+    "time_zone_origin": "studio_configuration",
+    "explicit_exceptions": null
+  },
+  "pricing": {
+    "displayed_price": "130.00",
+    "regular_price": null,
+    "currency": "EUR",
+    "currency_origin": "public_page",
+    "pricing_unit": "person"
+  },
+  "early_bird": {
+    "status": "unknown",
+    "price": null,
+    "final_date": null,
+    "cutoff_exclusive": null,
+    "restriction_text": null,
+    "quota_limit": null,
+    "quota_unit": "discounted_person"
+  },
+  "image": {
+    "reference": "https://www.middendorf-yoga.de/dein/static/images/malws.jpeg",
+    "public_use_status": "displayed_on_studio_page_only",
+    "marketing_permission": null,
+    "credit": null
+  },
+  "booking_url": "https://www.middendorf-yoga.de/workshops/mal-yoga-workshop-2026-10-18/",
+  "availability": {
+    "status": "unknown",
+    "source": null,
+    "workshop_id": null,
+    "observed_at": null,
+    "person_unit": "person",
+    "remaining_persons": null,
+    "early_bird_unit": "discounted_person",
+    "remaining_early_bird_units": null,
+    "max_age_seconds": null
+  },
+  "gaps": [
+    "Stable workshop identity, member-route association and source version are unverified.",
+    "No sanitized source document was reviewed; public source-field selection and explicit exceptions remain unverified.",
+    "The displayed price is known; regular-price classification and early-bird terms or verified absence remain unknown.",
+    "Image permission for marketing and attribution requirements are unknown.",
+    "No verified shared availability aggregate or freshness policy is available; the page count is historical display evidence only."
+  ]
+}

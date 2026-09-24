@@ -1,6 +1,6 @@
 # Workshop source data and proposed input contract
 
-As of September 18, 2026. Status: **Business rules partly confirmed; technical contract proposed; no models or mapping implemented**.
+As of September 24, 2026. Status: **Confirmed business rules; proposed marketing input; no models or mapping implemented**.
 
 This document prepares the independent workshop input described in
 [architecture section 3](architecture.md#3-data-and-factual-accuracy) and
@@ -11,6 +11,93 @@ The [shared booking contract](workshop-booking-contract.md) records the later
 Task 2a decisions on shared quotas, counting units, payment timing and goodwill,
 with proposed booking records and transitions. This document remains the marketing
 input/source mapping; it does not assign booking implementation to the Python package.
+
+## Mal-Yoga pilot input proposal
+
+**Owner-reported progress (September 24, 2026):** the website and booking routes
+have been updated. Initially, only **Mal-Yoga on October 18, 2026** uses the new
+booking route. Other workshops retain their existing workflows. This report is
+not a deployment check. Booking logic remains in the existing applications;
+marketing consumes public content and verified aggregates, without registrations.
+
+This section proposes the concrete pilot representation illustrated by
+[the sanitized Mal-Yoga example](../examples/workshops/mal-yoga-2026-10-18.json).
+It narrows the broader mapping below without approving a Firebase schema.
+The September 18 findings remain historical evidence, not a current system audit.
+
+### Pilot evidence, collected September 24, 2026 (Europe/Berlin)
+
+| ID | Source and snapshot | What was technically verified; limits |
+| --- | --- | --- |
+| P1 | [Public pilot page](https://www.middendorf-yoga.de/workshops/mal-yoga-workshop-2026-10-18/), HTTP 200; HTML retrieved at `2026-09-23T22:28:42Z` (September 24 locally), SHA-256 `9e65414a4f91e8ac7f130155b9138ae4e39b394b3a8f022db9554aaeb2a24196` | Canonical link at line 15; Event JSON-LD at 23; public route ID at 32; title/summary/image at 33; full description at 33–70; booking facts at 70. Browser display also inspected read-only. These are page observations, not a sanitized database document or a booking test. |
+| P2 | Local `myfunctions/functions/workshops/publicWorkshopData.js`, SHA-256 `5d3622a7ea5504d4f43a04e6ad78ba7e4426eb36d93abf2f4dd15ff2963268a7` | `resolvePublicShort` / `resolvePublicDescription` (146–162), `resolveEarlyBird` (164–187), `mapPublicWorkshop` (190–241). Local mapping evidence only; does not establish which code produced P1. |
+| P3 | Local `myfunctions/functions/workshops/bookingPersistence.js`, SHA-256 `4f4e58745f58a7b666e36c37e3ada5a2e6d8f4d4992ccc5a4be3770fcb7d0c09` | `remainingWorkshopAllocation` (37–42) checks schema version, matching workshop ID, known state and nonnegative integer limits/usage. Returns separate capacity and early-bird remainders; supplies no observation time or public marketing interface. Not executed. |
+
+P2 and P3 were **untracked** in the local checkout at Git HEAD
+`25d7b42a806903ab3be1b800fcd995a35bd7bb9f`; the hashes identify the inspected
+files, which are not contained in that commit. No application files were changed,
+dependencies installed, production Firestore accessed, or bookings/payments made.
+No sanitized pilot database document or verified live aggregate was available.
+The example retains selected P1 evidence; it is not the complete HTML snapshot.
+
+### Compact pilot mapping
+
+All names in the last column are **proposals**, using plain JSON values. P1
+verifies displayed values; P2 describes accepted local code shapes, not actual
+stored types. Confirmed defaults and counting rules come from the
+[owner decisions below](#business-rules-confirmed-by-the-owner) and the
+[booking contract](workshop-booking-contract.md#2-confirmed-rules-and-counting).
+
+| Input | Available source fields/types and evidence status | Proposed independent representation; unknown/conflict handling |
+| --- | --- | --- |
+| Stable and cross-route identity | P1 `data-workshop-id="malws-copy"` (string). P2 takes `id` and derives `seoPath`; no cross-route guarantee observed. | `identity.workshop_id`, `public_route_id`, `member_route_id`: opaque strings or null. Preserve observed `public_route_id`; canonical/member IDs remain null and `cross_route_status` is `unverified`. Do not identify a workshop by title/slug or assume `malws` and `malws-copy` identify the same occurrence. Verify the binding before associating aggregates. |
+| Source version | P2 `lastModified` serializes `updatedAt`, `modifiedAt`, or `createdAt`; no full writer coverage verified. P1 has a retrievable page snapshot only. | `source_version`: opaque string or null. Null here. Keep the P1 hash in `provenance`, never promote it or retrieval time to a workshop version. Conflicting revisions block a usable snapshot. |
+| Title and public copy | P1 title (text), short paragraph and complete description (HTML). P2 maps `title`/`name`, `publicContent.short`/`.description` and public aliases, but also falls back to `short`/`description`. | `content.title`, `public_summary_html`, `public_description_html`: original strings, including markup/line breaks. The example copies the P1 blocks exactly. `public_copy_status: source_selection_unverified` records that their upstream audience selection is unknown. No automatic member-copy fallback; retain differing originals separately and block affected content on factual conflicts. Public display alone is not permission to publish or proof of the selected source field. |
+| Date, times, zone, exceptions | P1 text: October 18, 11:00–17:30; JSON-LD strings `2026-10-18T11:00:00+02:00` and `2026-10-18T17:30:00+02:00`. P2 accepts `date`/`datum` and display `time`/`uhrzeit`. | `schedule.local_date` (`YYYY-MM-DD`), `start_time`/`end_time` (`HH:MM`), original `schedule_text`; `time_zone: Europe/Berlin` from `studio_configuration`, consistent with P1 offsets. `explicit_exceptions` is null until source review, not an assertion of no exceptions; later use a list of original exception statements. Invalid dates, ambiguous times, contradictory offsets or exceptions need review; invent no overnight rollover. |
+| Price, currency and pricing unit | P1 says `130 € pro Person`; JSON-LD `offers.price: "130.00"`, `priceCurrency: "EUR"`. P2 distinguishes `regularPriceEUR` from a possibly discounted `priceEUR`, parsed from numbers/text. | `pricing.displayed_price` preserves the observed amount as exact decimal string `"130.00"`; `currency: EUR` and `pricing_unit: person` are page-evidenced. `regular_price` remains null until classification is verified. Both price fields use a decimal string or null, never binary float; unknown is not free. Compare structured amounts with original copy; do not infer family/pair pricing. Conversion from booking minor units must be lossless. |
+| Early bird: price, deadline, restrictions, quota | No offer shown in P1; absence from the page does not verify absence of an offer. P2 reads `earlyBird.price`, `.until`, `.note`, `.limit` and derives remaining units from arrays. Actual pilot values/types are unverified. | `early_bird.status`: `unknown`, `absent` (verified absence only), or `present`. Nullable `price` uses the same decimal convention/currency/pricing unit; `final_date` is a local date, `cutoff_exclusive` an offset timestamp, `restriction_text` unchanged text, `quota_limit` a nonnegative integer. All are null here. `quota_unit: discounted_person` applies to this per-person general workshop if an offer exists; it asserts no limit/remaining units. Full final local day, shared pools and route-specific qualifying events remain settled rules. Missing terms block discount claims; zero is never an unlimited default. |
+| Image | P1 displays the string URL ending `/dein/static/images/malws.jpeg`; P2 resolves `imageJpg` or URL aliases (140–143). | `image.reference` retains the observed URL. `public_use_status: displayed_on_studio_page_only`; `marketing_permission` (boolean/null) and required `credit` (string/null) remain unknown. Display does not prove rights for other channels, dimensions or attribution requirements. Conflicting selections require review. |
+| Canonical booking page | P1 canonical and Event offer URL agree on the October workshop page. A public form is present; submission was not tested. | `booking_url`: the verified HTTPS workshop-page URL. It is a destination, not proof of working checkout, deployment, or workshop identity across routes. Never substitute a payment/provider link; missing or conflicting destinations block a booking call to action. |
+| Availability origin, association and units | P1 displays `Freie Plätze: 5`, descriptive maximum 6, and JSON-LD `InStock`. P2 `freeSlots` and `earlyBird.remaining` subtract registration-array lengths; those are not authoritative shared aggregates. P3 returns integer/null `capacityRemaining` and `earlyBirdRemaining` for a matching `workshopId`. No live P3 record was read. | `availability.source` (resolvable aggregate reference), `workshop_id`, `observed_at` (offset timestamp), `remaining_persons` and `remaining_early_bird_units` (nonnegative integers) are all null. `person_unit: person`, `early_bird_unit: discounted_person` are required units, not verified source units. A `verified` status requires a trusted aggregate with matching identity, both routes covered, explicit units and source observation time; partial unknowns cannot support claims about those counts. No arithmetic on P1 or participant lists. |
+| Freshness | P1 retrieval time is known; aggregate observation time and refresh policy are not. P3 supplies neither. | `availability.status`: `unknown`, `verified`, or `stale`; `max_age_seconds`: agreed positive integer or null. Null here blocks availability claims. Verify source/time/identity/units and age at use; stale, future-dated, conflicting or unknown evidence is not zero, unlimited, or available. P1's count stays solely in historical `provenance`, never in usable availability. |
+
+The example is a **sanitized reconstruction from verified public-page evidence**,
+not a verified source document, accepted model instance, or ready marketing input.
+`provenance.kind`, source URL, retrieval time and hash describe that reconstruction;
+`source_document_reviewed: false` and `gaps` state its limits. The observed count
+of five and advertised maximum of six are historical display evidence only, not
+ongoing availability guarantees. German public copy is preserved without edits.
+No member-only source was copied; participant records, private contacts,
+credentials and payment data are absent.
+
+### Prerequisites for the next input-validation issue
+
+Decide the small provisional contract above before writing models: required
+fields for a usable input versus an incomplete evidence example; explicit
+unknown/invalid/conflict diagnostics; acceptance of original HTML with separate
+public-copy suitability; decimal money, local schedule precision and offer states;
+and the required availability evidence/freshness policy. Unknown values may be
+retained, but must not pass as supported price, discount or availability claims.
+No new agreement on Berlin/EUR defaults, person pricing, shared pools or the
+full-day deadline is needed.
+
+Either obtain a sanitized pilot document to validate supported source shapes, or
+explicitly scope that next issue to this provisional independent representation
+with offline examples and no claim of Firestore compatibility. The exact source
+identity/version, public-copy selection, regular/early-bird terms and exception
+review remain prerequisites for accepting a **real pilot input**, even if model
+validation can first be built against the provisional representation.
+
+### Later integration work
+
+Verify the stable `malws-copy` binding to member/public routes and all relevant
+writers, source versioning, content selection and authoritative pricing. Obtain
+an aggregate interface with shared-pool coverage, declared units, workshop ID,
+observation time and refresh guarantees; verify image rights/credits and explicit
+exceptions. These are narrow integration prerequisites, not requests here for a
+deployment audit, migration, availability calculation, booking changes or marketing
+implementation. The earlier integration findings must not be treated as proof
+that these checks have already passed for October.
 
 ## Evidence and limits
 
@@ -83,8 +170,8 @@ The owner clarified the following rules on September 18, 2026:
   Genuinely late success for an early-bird quote requires review. Usual goodwill
   acceptance keeps the paid amount without a surcharge, remains early bird, and
   consumes the applicable units exactly once. Do not automatically refund or
-  request extra payment. Room capacity must be respected; permission to exceed
-  exhausted early-bird quota is unresolved, as detailed in the booking contract.
+  request extra payment. Task 9 authorizes no quota override: exhausted or unknown
+  room/quota keeps the case in review, as detailed in the booking contract.
 - **Separate audiences:** workshop data contains different descriptions for
   members and for the public/non-members. External marketing uses the public
   description. Preserve member copy separately; do not automatically substitute
