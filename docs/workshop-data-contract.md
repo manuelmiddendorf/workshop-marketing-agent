@@ -1,16 +1,71 @@
 # Workshop source data and proposed input contract
 
-As of September 24, 2026. Status: **Confirmed business rules; proposed marketing input; no models or mapping implemented**.
+As of September 24, 2026. Status: **Provisional input models and offline validation implemented; source mapping unimplemented**.
 
-This document prepares the independent workshop input described in
+This document defines the independent workshop input described in
 [architecture section 3](architecture.md#3-data-and-factual-accuracy) and
-the [confirmed V1 scope](v1-scope.md#2-confirmed-decisions). Field names below
-are proposals, not an approved schema.
+the [confirmed V1 scope](v1-scope.md#2-confirmed-decisions). The provisional contract
+below is implemented; historical source mapping and pilot proposals remain evidence
+and integration work, not a verified production schema.
 
 The [shared booking contract](workshop-booking-contract.md) records the later
 Task 2a decisions on shared quotas, counting units, payment timing and goodwill,
 with proposed booking records and transitions. This document remains the marketing
 input/source mapping; it does not assign booking implementation to the Python package.
+
+## Provisional validation contract
+
+This is the independent contract for the first Python input models. It does not
+claim compatibility with production Firestore documents. The historical mapping
+and pilot evidence below remain provenance, not automatic verification.
+
+`WorkshopInput` accepts incomplete evidence. Omitted facts remain `null` or an
+explicit unknown state; omitted groups contain unknown fields. They never become
+zero, false, an absent offer or unrestricted availability. Unknown fields and
+incorrect types are rejected. `validate_workshop(data, now=..., defaults=...)`
+returns the parsed input, field-specific diagnostics and separate claim support.
+Malformed structure returns no parsed input. Diagnostics distinguish `missing`,
+`invalid`, `conflicting` and a known `limitation` such as expired evidence.
+Caller input and original text are never modified. HTML is neither interpreted
+nor cleaned; member copy is never substituted. A result is not publishing approval.
+
+### Supported fields and usable snapshots
+
+| Group | Representation and requirement |
+| --- | --- |
+| `identity`, `source_version` | Pilot identity fields are retained. A usable snapshot needs a nonblank stable `workshop_id` and source-version string. Cross-route IDs/status may remain unknown; aggregate verification separately requires the shared pool. |
+| `verification` | `status: verified` plus a nonblank `source_ref` declares that the supplier checked stable identity, version, core facts and the canonical workshop-page destination. `workshop_id` and `source_version` must match the input. This checks a supplied attestation, without authenticating its origin or establishing factual truth. |
+| `content` | Exact `title`, `public_summary_html`, `public_description_html`, optional `member_description_html` and `public_copy_status`. Usable requires nonblank title/public description and `confirmed_public`; `source_selection_unverified` remains incomplete. Original strings, markup, whitespace and line breaks are preserved. |
+| `schedule` | `local_date` is `YYYY-MM-DD`; local `start_time`/`end_time` are `HH:MM`; `time_zone` is an IANA name; retain `schedule_text` and `time_zone_origin`. All structured schedule facts and origin are required for usability. Only same-day events with end after start are supported. Optional offset-aware `start_at`/`end_at` must agree with local facts and zone. Nonexistent local times are invalid; ambiguous times require a matching explicit instant. |
+| Exceptions and defaults | `schedule.explicit_exceptions` preserves original exception notes: null means unreviewed/unknown, `[]` means explicitly none. Usable requires a known list and `verification.exceptions_reviewed: true`. Explicit values and their origins are retained. Only an explicitly passed `StudioDefaults` may fill a missing zone/currency, and only with reviewed, empty exception notes and no conflicting supplied origin. Defaults support `Europe/Berlin` and `EUR`; applied origins are `studio_configuration`. Explicit exceptions use `workshop_exception` (or retain their known source origin). No semantic interpretation of notes. |
+| `location`, `booking_url` | Nonblank location text and an absolute HTTPS workshop-page URL are core requirements. URL validation checks a dotted host, valid port/escaping, no whitespace, credentials or fragment. It preserves the string and makes no network request; it cannot discover whether a destination is a payment service. The supplier's core verification must establish that it is the canonical public workshop page. |
+| `pricing` | Required core facts: classified `regular_price`, `currency`, `currency_origin`, `pricing_unit`. Keep optional `displayed_price` separate; if present, `displayed_price_kind` must identify `regular` or `early_bird` and agree with that amount/offer. Otherwise its kind is `unknown`. Supported units are `person` and `parent_child_family`; pair/other pricing is deferred. Currency is an uppercase three-letter code, not a claim of ISO registry verification. Origins are `source`, `public_page`, `studio_configuration` or `workshop_exception`. |
+| Money | Prices accept unsigned decimal strings (no leading zeros except `0`, with optional fractional digits) or finite nonnegative Python `Decimal` values; floats, integers, signs, exponent-form strings, malformed/non-finite/negative amounts are invalid. JSON output uses decimal strings, retaining precision/trailing zeros without rounding. No currency-scale conversion or implied free price. |
+| `early_bird` | `status` is `unknown`, `absent` or `present`; `verification` contains `status` and `source_ref`. Absence is only claimable with verification and no contradictory offer terms. Present offers retain nullable `price`, `final_date`, `cutoff_exclusive`, `restriction_text`, `restrictions_reviewed`, `quota_limit`, `quota_unit`. Unknown restrictions are distinct from reviewed empty text. A current discount needs verified complete terms, a lower price than regular, and positive verified person/discount remainders. This is claim validation, not booking eligibility. |
+| `availability` | Retain pilot fields plus `verification` and `shared_pool: true`. Claims need a verified aggregate with nonblank `source`, matching stable workshop ID, explicit `person` and applicable discount units, offset-aware `observed_at` and supplied positive integer `max_age_seconds`. Counts are strict nonnegative integers; person and discount claims are separate. Unknown counts do not block unrelated core facts. Never derive counts from `provenance` or registration lists. |
+| Optional claims | `audience` is text; `age` has nullable integer `minimum`/`maximum` in years; `included_services` is a list of original statements. Unknown values support no claims. Inverted age bounds conflict. `image` retains reference/status/permission/credit and adds nullable `attribution_required`; an image claim needs explicit permission and known attribution requirements, including credit when required. No rights or content interpretation is performed. |
+| Evidence annotations | `provenance` is preserved JSON metadata and `gaps` are original strings; neither grants verification. `conflicts` contains `{field, message}` records using dotted input paths. Supplied conflicts block the affected claim; unknown paths conservatively block the snapshot. |
+
+All optional claims require a usable core snapshot. Missing optional information
+produces diagnostics without preventing core usability. Contradictions affecting
+core facts do prevent usability; offer/image/availability/audience/age/services
+limitations affect their respective claims. A current discount additionally needs
+both verified positive counts and complete, unexpired offer terms. Verified zero
+is a supported count, not a claim that places are available.
+
+`now` must be an explicitly supplied aware datetime. A date-only early-bird final
+day ends at the next **local calendar midnight**, with the zone's offset at that
+midnight. The returned derived cutoff is separate from original offer evidence;
+a supplied cutoff must denote the same instant. At the cutoff the offer is
+expired. Availability is fresh only when `0 <= age <= max_age_seconds`, measured
+as elapsed UTC time. No default freshness threshold is supplied by the package.
+
+The unchanged [Mal-Yoga reconstruction](../examples/workshops/mal-yoga-2026-10-18.json)
+is structurally supported but incomplete. Its historical five-place observation
+never becomes usable availability. The [synthetic complete example](../examples/workshops/synthetic-complete-input.json)
+and offline tests exercise only this provisional contract. Real identity/version,
+source selection, price classification, exception review, rights and shared
+aggregate evidence remain later integration prerequisites.
 
 ## Mal-Yoga pilot input proposal
 
@@ -70,23 +125,17 @@ ongoing availability guarantees. German public copy is preserved without edits.
 No member-only source was copied; participant records, private contacts,
 credentials and payment data are absent.
 
-### Prerequisites for the next input-validation issue
+### Input-validation decisions and remaining prerequisites
 
-Decide the small provisional contract above before writing models: required
-fields for a usable input versus an incomplete evidence example; explicit
-unknown/invalid/conflict diagnostics; acceptance of original HTML with separate
-public-copy suitability; decimal money, local schedule precision and offer states;
-and the required availability evidence/freshness policy. Unknown values may be
-retained, but must not pass as supported price, discount or availability claims.
-No new agreement on Berlin/EUR defaults, person pricing, shared pools or the
-full-day deadline is needed.
+The [provisional validation contract](#provisional-validation-contract) settles
+required/optional fields, evidence, diagnostics, exact text/money, local schedules,
+offer states and aggregate freshness for the first models. It applies the
+confirmed defaults, pricing units, shared pools and full-day deadline rule.
 
-Either obtain a sanitized pilot document to validate supported source shapes, or
-explicitly scope that next issue to this provisional independent representation
-with offline examples and no claim of Firestore compatibility. The exact source
+The models support this independent representation with offline examples and
+no claim of Firestore compatibility. A sanitized pilot document, exact source
 identity/version, public-copy selection, regular/early-bird terms and exception
-review remain prerequisites for accepting a **real pilot input**, even if model
-validation can first be built against the provisional representation.
+review remain prerequisites for accepting a **real pilot input**.
 
 ### Later integration work
 
@@ -299,8 +348,8 @@ are added. Distinguish absent, null, empty, invalid, and conflicting evidence;
 do not manufacture zero, false, an empty offer, or an empty participant count.
 The simplest proposed normalized convention is null for an unknown optional
 fact, with the reason retained in mapping diagnostics outside the marketing
-facts. Confirm how an explicitly absent offer differs from an unknown offer
-before models are implemented. Different nonempty aliases must be compared and
+facts. The provisional contract now separates verified absence from an unknown
+offer; source mapping still needs evidence. Different nonempty aliases must be compared and
 reported, not silently overwritten; differently targeted public/member copy is
 kept separate rather than treated as interchangeable text.
 
@@ -356,33 +405,22 @@ were observed source fields. Missing canonical booking URL and other facts are
 not filled with guesses. Editor normalization would add defaults, including an empty
 early-bird object to the second example; that would not add source evidence.
 
-## Questions before workshop models
+## Model decisions and source limitations
 
-These technical contract decisions remain open after the business clarification:
+The [provisional validation contract](#provisional-validation-contract) resolves
+the former model questions: required core facts, incomplete evidence and claim
+limitations; local dates/times with explicit ambiguity handling; exact decimal
+money; offer states; and original public/member text with explicit public selection.
+There are no outstanding representation decisions blocking these provisional models.
 
-1. **Required fields and unknowns:** agree the smallest useful input, when identity
-   and source version must be present, and how unknown facts differ from invalid
-   or conflicting input and an explicitly confirmed absence of an offer.
-2. **Schedule and offer precision:** agree whether first models retain partial
-   local dates/times and date-only offer deadlines or require resolved instants.
-   Agree marketing money precision and representation of the confirmed pricing
-   scopes and units without suggesting a usable discount. The booking contract
-   proposes integer minor units for agreed amounts; the marketing input above
-   proposes exact decimal strings, requiring lossless mapping. Shared quotas,
-   general/family units, defaults, cutoff and qualifying events are settled.
-3. **Content representation:** separate member/public descriptions and use of
-   public copy for external promotion are settled. Choose the concrete text
-   fields and public-eligibility/unknown representation. Missing public copy does
-   not authorize automatic fallback to member-facing content.
-4. **Evidence for supported shapes:** review an offline, sanitized real workshop
-   example, especially price scope and early-bird restrictions, before claiming
-   compatibility with stored data. If models proceed before that evidence exists,
-   explicitly limit them to the agreed provisional contract.
+Compatibility still needs a sanitized real source example, especially for price
+scope and restrictions. Mapping booking amounts in integer minor units to marketing
+decimal strings must be lossless and remains integration work.
 
 ## Questions for later integration
 
-Once the representations above are agreed, their concrete sources can be
-verified in the integration task:
+The provisional representations do not verify their concrete sources. The
+integration task still needs to:
 
 - Confirm document-key/metadata consistency, actual stored types and legacy
   aliases, writer coverage of `updatedAt`, and a reliable source-version token.

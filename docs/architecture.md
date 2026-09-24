@@ -1,12 +1,12 @@
 # Architecture: workshop-marketing-agent
 
-As of September 18, 2026. Status: **Draft for joint review; package foundation implemented**.
+As of September 24, 2026. Status: **Draft for joint review; package and provisional input validation implemented**.
 
 Confirmed product decisions are documented in [v1-scope.md](v1-scope.md).
-Only the minimal installable Python package foundation is implemented, using
-Python 3.13 and Hatchling. The remaining technical design is a proposal for later
-implementation. Open questions are explicitly marked. There is no V1 business
-logic or verified integration with the existing teacher app yet.
+The installable Python package uses Python 3.13 and Hatchling. Provisional
+workshop input models and deterministic offline validation use Pydantic. The
+remaining technical design is a proposal for later implementation. Open questions
+are explicitly marked. Generation and integration with the teacher app remain unimplemented.
 
 ## 1. Purpose and architectural principles
 
@@ -44,6 +44,12 @@ allowed transitions. Concrete storage and API credentials stay outside the
 business logic. The exact execution model remains open in section 12.
 
 ## 3. Data and factual accuracy
+
+The implemented [provisional input contract](workshop-data-contract.md#provisional-validation-contract)
+distinguishes incomplete evidence, usable core facts and supported optional claims.
+It checks supplied structure and consistency, without authenticating evidence,
+interpreting prose, granting publishing approval or claiming Firestore compatibility.
+The integration behavior described below remains planned.
 
 The integration provides a validated snapshot of workshop data with a stable
 workshop ID and source version. As needed, it includes the title, original
@@ -329,7 +335,7 @@ access, tracking, and production Firebase integration.
 | Topic | Next step | Required before |
 | --- | --- | --- |
 | Python runtime | Python 3.13 is the chosen and verified package baseline; metadata uses `>=3.13`. Other Python versions and Firebase runtimes remain unverified | Verify the target runtime before Firebase integration |
-| Workshop data model | Review the [Mal-Yoga pilot input proposal](workshop-data-contract.md#mal-yoga-pilot-input-proposal) and its validation prerequisites; the October 18 pilot example reconstructs public-page evidence, with source identity/version and verified aggregates still missing. Earlier examples remain synthetic | Defining the public workshop data models |
+| Workshop data model | The [provisional input contract](workshop-data-contract.md#provisional-validation-contract) is implemented and tested offline. Obtain sanitized source evidence and verify identity/version, public-copy selection, pricing, exceptions and aggregates; the [Mal-Yoga pilot](workshop-data-contract.md#mal-yoga-pilot-input-proposal) remains incomplete | Accepting a real pilot snapshot or claiming source compatibility |
 | Concrete data mapping | Check field names, versioning, stored date/price types, route-specific registration/payment event and timestamp, quota units/counts, permissions, and image paths; apply the confirmed studio defaults and full-day deadline rule | Implementing the respective Firebase integration |
 | Execution | Proposal: short, separate server-side actions per channel; measure runtime and define behavior when a request is canceled or the app is closed | Integrating generation into the teacher app and promising background execution |
 | Tracking | The 90-day window and workshop scope are decided; define identification, consent, retention, deletion, and what counts as a booking | Implementing and storing attribution linked to individual visitors |

@@ -8,6 +8,9 @@ version = "0.1.0"
 description = "A Python package foundation for AI-assisted workshop marketing."
 readme = "README.md"
 requires-python = ">=3.13"
+dependencies = [
+    "pydantic>=2.12,<3",
+]
 
 [dependency-groups]
 dev = [
