@@ -9,52 +9,88 @@ recorded in the documentation.
 
 ## Local setup
 
-Use a current Python 3.13 patch release. Python 3.13 is the verified baseline;
-the package metadata (`>=3.13`) does not claim testing of other Python versions
-or Firebase runtimes. The commands below use **zsh or bash on macOS/Linux**,
-starting in the repository root.
+Install uv using the [official installation instructions](https://docs.astral.sh/uv/getting-started/installation/).
+The commands below use **zsh or bash on macOS/Linux**, starting in the repository
+root. `.python-version` selects Python 3.13; uv can download it if needed.
+The package metadata (`>=3.13`) does not claim testing of other Python versions
+or Firebase runtimes.
 
 ```sh
-python3.13 --version
-python3.13 -m venv .venv
-source .venv/bin/activate
-python -m pip install -e .
-python -c "import workshop_marketing_agent; print(workshop_marketing_agent.__file__)"
+uv --version
+uv sync --locked
+uv run --locked python --version
+uv run --locked python -c "import workshop_marketing_agent"
+uv run --locked python -m pytest --version
 ```
 
-The virtual environment keeps project tools separate from other Python projects.
-The editable installation imports from `src/workshop_marketing_agent`, so source
-changes are available without reinstalling. Activate `.venv` in each new shell;
-run `deactivate` when finished.
+uv creates and manages `.venv`, installs the package in editable mode, and includes
+pytest from the `dev` dependency group. Source changes under
+`src/workshop_marketing_agent` are available without reinstalling. `uv run` uses
+this environment without manual activation.
+
+The committed `uv.lock` records exact development dependency versions. `--locked`
+checks that it matches `pyproject.toml` and fails instead of changing it. Intentional
+dependency changes should update both files together; do not edit the lockfile by
+hand. See [uv's locking and syncing documentation](https://docs.astral.sh/uv/concepts/projects/sync/).
+
+For clean-install verification without changing an existing `.venv`, set
+`UV_PROJECT_ENVIRONMENT` to a fresh absolute path before running the same commands:
+
+```sh
+export UV_PROJECT_ENVIRONMENT="$(mktemp -d)/venv"
+```
+
+Keep that setting for the verification session, then run
+`unset UV_PROJECT_ENVIRONMENT` to return to the default project environment.
 
 There are no runtime dependencies. Importing the package needs no credentials,
-configuration, or network calls. Pydantic, the OpenAI SDK, Firebase libraries,
-and pytest are deferred until needed by a later task.
+configuration, or network calls. Initial setup may need network access to download
+Python and build/development tools. Pydantic, the OpenAI SDK, and Firebase libraries
+remain deferred.
+
+Run future behavior tests with:
+
+```sh
+uv run --locked python -m pytest
+```
+
+No behavior tests exist yet. The pytest version check above verifies that the test
+runner is installed; it is not a passing test suite. The first tests belong with
+workshop validation, not this setup change.
 
 ## Build and verify a wheel
 
-With `.venv` active and the shell in the repository root:
+From the repository root:
 
 ```sh
-python -m pip install build
-python -m build --wheel
+uv build --wheel
 repo_dir="$PWD"
-verify_dir="$(mktemp -d)"
-python -m venv "$verify_dir/venv"
+wheel_check_dir="$(mktemp -d)"
+uv venv --python 3.13 "$wheel_check_dir/venv"
+uv pip install --python "$wheel_check_dir/venv/bin/python" --no-index --no-deps \
+    "$repo_dir/dist/workshop_marketing_agent-0.1.0-py3-none-any.whl"
 (
-    cd "$verify_dir"
-    ./venv/bin/python -m pip install --no-index --no-deps \
-        "$repo_dir/dist/workshop_marketing_agent-0.1.0-py3-none-any.whl"
-    ./venv/bin/python -I -c "import workshop_marketing_agent; print(workshop_marketing_agent.__file__)"
+    cd "$wheel_check_dir"
+    env -i ./venv/bin/python -I -c "import workshop_marketing_agent; print(workshop_marketing_agent.__file__)"
 )
 ```
 
 The import path must point inside the temporary environment's `site-packages`,
 outside the repository. `-I` isolates the import from the working directory,
 user site packages, and Python environment variables. The wheel installation
-uses only the local file. Hatchling is the build backend; `build` is a development
-tool. Installing build tools may need package-index access. The Hatch application
-is not required. The temporary verification directory can be removed afterward.
+uses only the local file, and `env -i` clears inherited environment variables,
+including credentials, for the import.
+
+uv runs the build; Hatchling remains the backend that creates the wheel. Its
+isolated build dependencies are resolved separately from `uv.lock` using
+`build-system.requires`; the lockfile does not pin them. The Hatch application and
+a separate `build` installation are unnecessary. Temporary verification
+directories can be removed afterward.
+
+Verified on macOS with **Python 3.13.5** and **uv 0.11.31**: locked sync into a fresh
+temporary project environment, package import, pytest version check, wheel build,
+and wheel installation/import in a second clean environment outside the repository.
+The lockfile and the existing local `.venv` were unchanged by these checks.
 
 ## Documentation
 
