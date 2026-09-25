@@ -1,11 +1,12 @@
 # V1 scope: workshop-marketing-agent
 
-As of September 18, 2026. Status: **Draft for joint review; package foundation implemented**.
+As of September 24, 2026. Status: **Draft for joint review; package and provisional input validation implemented**.
 
 This document collects the requirements confirmed during the architecture
 discussion. The proposed technical design is in [architecture.md](architecture.md),
-with open details listed separately. Only the minimal Python package foundation
-is implemented; V1 functionality has not been implemented yet.
+with open details listed separately. The Python package foundation and provisional
+workshop input validation are implemented. Generation, publishing and application
+integrations remain planned.
 
 **Pilot update, September 24, 2026 (owner-reported):** the website and booking
 routes have been updated; only Mal-Yoga on October 18, 2026 initially uses the new
@@ -223,7 +224,7 @@ implementing those extensions in V1.
 ## 9. Development and documentation
 
 The merged architecture and scope documentation records the agreed foundation
-and open questions. The minimal Python package foundation is implemented;
+and open questions. The package foundation and provisional input validation are implemented;
 remaining questions are resolved or explicitly assigned to a later issue before
 the implementation that depends on them starts.
 

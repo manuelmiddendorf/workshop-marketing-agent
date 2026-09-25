@@ -1,0 +1,80 @@
+{
+  "provenance": {
+    "kind": "synthetic",
+    "note": "Entirely invented offline example; verification references, counts, permissions and freshness policy are illustrative, not production evidence."
+  },
+  "identity": {
+    "workshop_id": "synthetic-workshop-01",
+    "public_route_id": "synthetic-public-01",
+    "member_route_id": "synthetic-member-01",
+    "cross_route_status": "verified"
+  },
+  "source_version": "synthetic-v1",
+  "verification": {
+    "status": "verified",
+    "source_ref": "synthetic:content-review:1",
+    "workshop_id": "synthetic-workshop-01",
+    "source_version": "synthetic-v1",
+    "exceptions_reviewed": true
+  },
+  "content": {
+    "title": "Synthetischer Kreativ-Workshop",
+    "public_summary_html": "Yoga &amp; Farben – ein frei erfundenes Beispiel.",
+    "public_description_html": "<p>Dieses Beispiel ist frei erfunden.</p>\n<p>Wir verbinden sanftes Yoga mit spielerischem Malen. Materialien sind enthalten.</p>",
+    "member_description_html": "Interner Beispieltext.\nNicht automatisch für die Öffentlichkeit übernehmen.",
+    "public_copy_status": "confirmed_public"
+  },
+  "schedule": {
+    "local_date": "2026-11-08",
+    "start_time": "11:00",
+    "end_time": "13:00",
+    "time_zone": "Europe/Berlin",
+    "time_zone_origin": "source",
+    "schedule_text": "Sonntag, 8. November 2026, 11:00–13:00 Uhr",
+    "explicit_exceptions": []
+  },
+  "location": "Fiktives Atelier in Berlin",
+  "booking_url": "https://example.org/workshops/synthetic-workshop-01/",
+  "pricing": {
+    "regular_price": "120.00",
+    "displayed_price": "95.00",
+    "displayed_price_kind": "early_bird",
+    "currency": "EUR",
+    "currency_origin": "source",
+    "pricing_unit": "person"
+  },
+  "early_bird": {
+    "status": "present",
+    "verification": {"status": "verified", "source_ref": "synthetic:offer-review:1"},
+    "price": "95.00",
+    "final_date": "2026-10-25",
+    "cutoff_exclusive": "2026-10-26T00:00:00+01:00",
+    "restriction_text": "Gilt für höchstens sechs vergünstigte Personenplätze.",
+    "restrictions_reviewed": true,
+    "quota_limit": 6,
+    "quota_unit": "discounted_person"
+  },
+  "availability": {
+    "status": "verified",
+    "verification": {"status": "verified", "source_ref": "synthetic:aggregate-review:1"},
+    "source": "synthetic:shared-pool:1",
+    "workshop_id": "synthetic-workshop-01",
+    "shared_pool": true,
+    "observed_at": "2026-10-24T09:59:00Z",
+    "max_age_seconds": 300,
+    "person_unit": "person",
+    "remaining_persons": 5,
+    "early_bird_unit": "discounted_person",
+    "remaining_early_bird_units": 2
+  },
+  "image": {
+    "reference": "https://example.org/images/synthetic-workshop.png",
+    "public_use_status": "synthetic_permission_example",
+    "marketing_permission": true,
+    "attribution_required": true,
+    "credit": "Fiktives Studioteam"
+  },
+  "audience": "Erwachsene ohne Vorkenntnisse",
+  "age": {"minimum": 18, "maximum": null},
+  "included_services": ["Mal-Materialien"]
+}
