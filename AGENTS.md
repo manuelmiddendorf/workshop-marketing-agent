@@ -3,8 +3,9 @@
 ## Project phase and source of truth
 
 - The Python package foundation and provisional workshop input validation are
-  implemented. Generation and integrations remain planned; implement them only
-  through subsequent tasks.
+  implemented, along with the read-only public pilot feed importer. Generation
+  and teacher-app integration remain planned; implement them only through
+  subsequent tasks.
 - Before making changes, read the relevant sections of
   [docs/architecture.md](docs/architecture.md) and [docs/v1-scope.md](docs/v1-scope.md).
   They distinguish confirmed decisions, technical proposals, and open questions.

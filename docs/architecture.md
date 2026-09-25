@@ -6,7 +6,8 @@ Confirmed product decisions are documented in [v1-scope.md](v1-scope.md).
 The installable Python package uses Python 3.13 and Hatchling. Provisional
 workshop input models and deterministic offline validation use Pydantic. The
 remaining technical design is a proposal for later implementation. Open questions
-are explicitly marked. Generation and integration with the teacher app remain unimplemented.
+are explicitly marked. A read-only public pilot feed importer is implemented;
+generation and integration with the teacher app remain unimplemented.
 
 ## 1. Purpose and architectural principles
 
@@ -50,6 +51,11 @@ distinguishes incomplete evidence, usable core facts and supported optional clai
 It checks supplied structure and consistency, without authenticating evidence,
 interpreting prose, granting publishing approval or claiming Firestore compatibility.
 The integration behavior described below remains planned.
+
+The [public feed importer](public-workshop-feed.md) is a separate read-only HTTP
+boundary for `workshop-data.v1`. It checks the envelope, requested identity and
+active/scheduled event status while retaining the validator's claim limitations.
+It does not map Firestore records or implement booking logic.
 
 The integration provides a validated snapshot of workshop data with a stable
 workshop ID and source version. As needed, it includes the title, original

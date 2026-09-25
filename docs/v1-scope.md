@@ -5,8 +5,8 @@ As of September 24, 2026. Status: **Draft for joint review; package and provisio
 This document collects the requirements confirmed during the architecture
 discussion. The proposed technical design is in [architecture.md](architecture.md),
 with open details listed separately. The Python package foundation and provisional
-workshop input validation are implemented. Generation, publishing and application
-integrations remain planned.
+workshop input validation are implemented, along with a read-only public pilot
+feed importer. Generation, publishing and teacher-app integration remain planned.
 
 **Pilot update, September 24, 2026 (owner-reported):** the website and booking
 routes have been updated; only Mal-Yoga on October 18, 2026 initially uses the new

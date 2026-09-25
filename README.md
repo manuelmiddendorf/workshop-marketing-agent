@@ -3,9 +3,10 @@
 A Python project for AI-assisted workshop marketing, with human approval,
 channel adapters, and evaluation.
 
-**Status:** The package includes provisional workshop input models and deterministic
-offline validation. Generation, publishing and application integrations remain
-planned. Production source compatibility has not been verified.
+**Status:** The package includes provisional workshop input models, deterministic
+offline validation and a read-only public pilot feed importer. Generation,
+publishing and teacher-app integration remain planned. Firestore document
+compatibility has not been verified.
 
 ## Local setup
 
@@ -43,8 +44,8 @@ export UV_PROJECT_ENVIRONMENT="$(mktemp -d)/venv"
 Keep that setting for the verification session, then run
 `unset UV_PROJECT_ENVIRONMENT` to return to the default project environment.
 
-Pydantic is the runtime dependency. Importing and validating data need no
-credentials, application configuration or network calls. Initial setup may need
+Pydantic is the runtime dependency. Importing the package and validating supplied
+data need no credentials, application configuration or network calls. Initial setup may need
 network access to download Python, dependencies and build tools. The OpenAI SDK
 and Firebase libraries remain deferred.
 
@@ -80,6 +81,11 @@ Inspect `diagnostics` and the separate `claims` before using optional facts.
 Revalidate with the actual current time before using time-sensitive claims.
 Validation checks supplied structure and consistency, not factual truth or
 permission to publish. The existing Mal-Yoga reconstruction remains incomplete.
+
+To fetch the configured public pilot, see the
+[feed import example and limitations](docs/public-workshop-feed.md). HTTP handling
+is separate from these offline rules; importing is neither publishing approval
+nor booking verification.
 
 ## Build and verify a wheel
 
