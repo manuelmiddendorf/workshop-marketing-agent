@@ -7,7 +7,8 @@ The installable Python package uses Python 3.13 and Hatchling. Provisional
 workshop input models and deterministic offline validation use Pydantic. The
 remaining technical design is a proposal for later implementation. Open questions
 are explicitly marked. A read-only public pilot feed importer and one bounded
-Google Business/Rausgegangen draft path are implemented; publishing and
+Google Business/Rausgegangen draft, revision, and exact-version approval paths
+are implemented without persistence; publishing and
 integration with the teacher app remain unimplemented.
 
 ## 1. Purpose and architectural principles
@@ -145,6 +146,11 @@ One good draft is preselected; up to two additional variants can be generated
 on request. A revision uses the current version, preserves the previous one,
 and requires renewed review and approval when adopted.
 
+The implemented [pilot revision and exact-version approval boundary](draft-revision-approval.md)
+keeps immutable in-memory histories per channel. Direct edits and AI revisions
+share the generation path's deterministic checks. Approval and later submission
+readiness recheck current imported evidence but perform no external action.
+
 ## 5. Campaigns, versions, and persistent state
 
 Proposed model: a workshop has a marketing campaign with multiple marketing
@@ -177,6 +183,11 @@ Approvals apply to a specific version. Changes to its text, image, or link
 invalidate approval. Changes to relevant workshop facts and expired price
 deadlines trigger another review. Immediately before sending, the integration
 compares the current state with the approved source data.
+
+The implemented persistence-independent approval uses a canonical SHA-256
+fingerprint over the exact approval-bound content, facts, channel, source, link,
+and image selection. The proposed persistent campaign and authorization model
+remains future integration work.
 
 Published posts that need changes are visibly flagged when the current data is
 checked. V1 does not promise scheduled background corrections. Teachers initiate

@@ -4,8 +4,10 @@
 
 - The Python package foundation, provisional workshop input validation, read-only
   public pilot feed importer, and review-only Google Business/Rausgegangen pilot
-  draft generation are implemented. Publishing and teacher-app integration remain
-  planned; implement them only through subsequent tasks.
+  draft generation are implemented. Persistence-independent draft revision and
+  exact-version approval rules are also implemented. Publishing, persistence,
+  authorization, and teacher-app integration remain planned; implement them only
+  through subsequent tasks.
 - Before making changes, read the relevant sections of
   [docs/architecture.md](docs/architecture.md) and [docs/v1-scope.md](docs/v1-scope.md).
   They distinguish confirmed decisions, technical proposals, and open questions.

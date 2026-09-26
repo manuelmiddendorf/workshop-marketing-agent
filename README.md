@@ -4,8 +4,9 @@ A Python project for AI-assisted workshop marketing, with human approval,
 channel adapters, and evaluation.
 
 **Status:** The package includes provisional workshop input models, deterministic
-offline validation, a read-only public pilot feed importer, and review-only pilot
-draft generation for Google Business Profile and Rausgegangen. Publishing and
+offline validation, a read-only public pilot feed importer, review-only pilot
+draft generation, and persistence-independent revision and exact-version
+approval rules for Google Business Profile and Rausgegangen. Publishing and
 teacher-app integration remain planned. Firestore document compatibility has not
 been verified.
 
@@ -94,6 +95,10 @@ To generate the two review-only pilot drafts, see the
 Routine tests inject stored responses. A deliberate live command requires an
 explicit model and `OPENAI_API_KEY`; it creates no external post.
 
+The [revision and exact-version approval workflow](docs/draft-revision-approval.md)
+keeps immutable per-channel history and rechecks current imported evidence. Its
+approval record is readiness for one fingerprint, not permission to publish.
+
 ## Build and verify a wheel
 
 From the repository root:
@@ -135,6 +140,7 @@ Other Python versions and target deployment runtimes remain unverified.
 - [Architecture proposal](docs/architecture.md)
 - [V1 scope and acceptance criteria](docs/v1-scope.md)
 - [Pilot draft generation](docs/pilot-draft-generation.md)
+- [Draft revision and exact-version approval](docs/draft-revision-approval.md)
 - [Prompt comparison](evaluations/prompt-comparison.md)
 - [Project working guidelines](AGENTS.md)
 

@@ -12,7 +12,17 @@ from decimal import Decimal
 from typing import Literal, Protocol
 
 from openai import APIError, APITimeoutError, OpenAI
-from pydantic import BaseModel, ConfigDict, JsonValue, ValidationError, ValidationInfo, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    JsonValue,
+    TypeAdapter,
+    ValidationError,
+    ValidationInfo,
+    computed_field,
+    field_validator,
+)
 
 from .feed import FeedImportResult
 from .models import WorkshopInput
@@ -29,7 +39,7 @@ ChannelId = Literal["google_business", "rausgegangen"]
 
 
 class _StrictModel(BaseModel):
-    model_config = ConfigDict(extra="forbid", strict=True)
+    model_config = ConfigDict(extra="forbid", strict=True, frozen=True)
 
 
 class GeneratedWording(_StrictModel):
@@ -111,12 +121,24 @@ class RausgegangenDraft(_StrictModel):
 
 class GenerationMetadata(_StrictModel):
     model: str
-    prompt_version: Literal["pilot-drafts.v1", "pilot-drafts.v2"]
-    schema_version: Literal["pilot-drafts.v1"] = SCHEMA_VERSION
+    prompt_version: Literal["pilot-drafts.v1", "pilot-drafts.v2", "pilot-revision.v1"]
+    schema_version: Literal["pilot-drafts.v1", "pilot-revision.v1"] = SCHEMA_VERSION
     source_version: str
     generated_at: datetime
-    usage: dict[str, JsonValue]
+    usage_json: str = Field(alias="usage", exclude=True, repr=False)
     automatic_retries: Literal[0] = 0
+
+    @field_validator("usage_json", mode="before")
+    @classmethod
+    def _freeze_usage(cls, value: object) -> str:
+        usage = TypeAdapter(dict[str, JsonValue]).validate_python(value)
+        return json.dumps(usage, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+
+    @computed_field
+    @property
+    def usage(self) -> dict[str, JsonValue]:
+        """Return a fresh copy so callers cannot mutate recorded metadata."""
+        return json.loads(self.usage_json)
 
 
 @dataclass(frozen=True)
@@ -126,12 +148,14 @@ class ModelRequest:
     input_json: str
     timeout: float
     max_output_tokens: int = MAX_OUTPUT_TOKENS
+    schema_name: str = "pilot_channel_wording"
+    output_schema: type[BaseModel] = GeneratedWording
 
 
 @dataclass(frozen=True)
 class ModelCallResult:
     status: Literal["completed", "refused", "incomplete", "failed"]
-    output: GeneratedWording | Mapping[str, object] | str | None = None
+    output: BaseModel | Mapping[str, object] | str | None = None
     usage: Mapping[str, object] | None = None
     detail: str | None = None
 
@@ -159,6 +183,8 @@ class OpenAIDraftClient:
         self._client = OpenAI(api_key=api_key, max_retries=0)
 
     def generate(self, request: ModelRequest) -> ModelCallResult:
+        schema_name = getattr(request, "schema_name", "pilot_channel_wording")
+        output_schema = getattr(request, "output_schema", GeneratedWording)
         try:
             response = self._client.responses.create(
                 model=request.model,
@@ -167,9 +193,9 @@ class OpenAIDraftClient:
                 text={
                     "format": {
                         "type": "json_schema",
-                        "name": "pilot_channel_wording",
+                        "name": schema_name,
                         "strict": True,
-                        "schema": GeneratedWording.model_json_schema(),
+                        "schema": output_schema.model_json_schema(),
                     }
                 },
                 max_output_tokens=request.max_output_tokens,
@@ -193,7 +219,7 @@ class OpenAIDraftClient:
                 if getattr(content, "type", None) == "refusal":
                     return ModelCallResult("refused", usage=usage, detail="Model refused the request")
         try:
-            parsed = GeneratedWording.model_validate_json(response.output_text)
+            parsed = output_schema.model_validate_json(response.output_text)
         except (ValidationError, ValueError, TypeError) as error:
             raise GenerationSchemaError from error
         return ModelCallResult("completed", output=parsed, usage=usage)
@@ -349,7 +375,7 @@ def _prompt_input(
     return json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
 
 
-def _parse_output(output: GeneratedWording | Mapping[str, object] | str | None) -> GeneratedWording:
+def _parse_output(output: BaseModel | Mapping[str, object] | str | None) -> GeneratedWording:
     if isinstance(output, GeneratedWording):
         return output
     if isinstance(output, str):
