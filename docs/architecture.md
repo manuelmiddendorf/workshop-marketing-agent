@@ -153,7 +153,12 @@ readiness recheck current imported evidence but perform no external action.
 
 ## 5. Campaigns, versions, and persistent state
 
-Proposed model: a workshop has a marketing campaign with multiple marketing
+The [pilot campaign application service](pilot-campaign-state.md) implements serializable
+rounds, immutable histories, exact approvals and prepared packages, command receipts,
+and an in-memory atomic compare-and-save boundary. Production persistence,
+authorization and publication records remain planned.
+
+A workshop has a marketing campaign with multiple marketing
 rounds, such as an initial announcement and a reminder. Correcting a publication
 is an update linked to the existing post; it does not automatically create a new round.
 
@@ -186,8 +191,9 @@ compares the current state with the approved source data.
 
 The implemented persistence-independent approval uses a canonical SHA-256
 fingerprint over the exact approval-bound content, facts, channel, source, link,
-and image selection. The proposed persistent campaign and authorization model
-remains future integration work.
+and image selection. Campaign JSON restoration verifies these bindings; stored
+statuses do not establish fresh readiness. Production storage and authorization
+remain future integration work.
 
 Published posts that need changes are visibly flagged when the current data is
 checked. V1 does not promise scheduled background corrections. Teachers initiate

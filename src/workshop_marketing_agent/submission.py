@@ -185,10 +185,18 @@ def prepare_google_submission(
     failure = _check(version, approval, current_import, now, "google_business")
     if failure is not None:
         return failure
+    payload = _google_payload(version)
+    return PreparationResult(
+        "ready", PreparedSubmission(version, approval, now, payload), current_import.diagnostics,
+    )
+
+
+def _google_payload(version: DraftVersion) -> GoogleSubmissionPayload:
+    """Exact field mapping, also used to verify restored historical packages."""
     draft = version.content
     schedule = draft.schedule
     day = GoogleDate.from_date(schedule.local_date)
-    payload = GoogleSubmissionPayload(
+    return GoogleSubmissionPayload(
         summary=draft.body,
         event=GoogleEvent(title=draft.title, schedule=GoogleSchedule(
             startDate=day, endDate=day,
@@ -198,9 +206,6 @@ def prepare_google_submission(
         callToAction=GoogleCallToAction(url=version.final_booking_url),
         media=(GoogleMedia(sourceUrl=version.selected_image_reference),)
         if version.selected_image_reference is not None else None,
-    )
-    return PreparationResult(
-        "ready", PreparedSubmission(version, approval, now, payload), current_import.diagnostics,
     )
 
 
@@ -213,13 +218,18 @@ def prepare_rausgegangen_submission(
     failure = _check(version, approval, current_import, now, "rausgegangen")
     if failure is not None:
         return failure
+    payload = _rausgegangen_payload(version)
+    return PreparationResult(
+        "ready_to_copy", PreparedSubmission(version, approval, now, payload), current_import.diagnostics,
+    )
+
+
+def _rausgegangen_payload(version: DraftVersion) -> RausgegangenCopyPackage:
+    """Exact copy mapping without evaluating present-day eligibility."""
     draft = version.content
-    payload = RausgegangenCopyPackage(
+    return RausgegangenCopyPackage(
         title=draft.title, description=draft.description, fact_sheet=draft.fact_sheet,
         external_booking_link=version.final_booking_url,
         image_reference=version.selected_image_reference,
         price_note=_price_text(version.workshop_facts),
-    )
-    return PreparationResult(
-        "ready_to_copy", PreparedSubmission(version, approval, now, payload), current_import.diagnostics,
     )

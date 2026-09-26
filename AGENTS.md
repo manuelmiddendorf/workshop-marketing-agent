@@ -6,7 +6,8 @@
   public pilot feed importer, and review-only Google Business/Rausgegangen pilot
   draft generation are implemented. Persistence-independent draft revision and
   exact-version approval rules, campaign links, and side-effect-free submission
-  preparation are also implemented. Publishing, persistence,
+  preparation are also implemented. Serializable pilot campaign state, application
+  commands, and an in-memory compare-and-save repository are implemented. Publishing, production persistence,
   authorization, and teacher-app integration remain planned; implement them only
   through subsequent tasks.
 - Before making changes, read the relevant sections of

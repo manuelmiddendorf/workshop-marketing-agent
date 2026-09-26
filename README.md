@@ -103,6 +103,11 @@ Tracked links are bound before approval. See the [submission preparation flow](d
 for exact Google payloads and Rausgegangen copy packages. Preparation makes no
 network requests and records no submission or publication.
 
+Campaign state and explicit application commands now support strict JSON snapshots,
+independent channel histories, replay receipts and atomic revision checks. See the
+[pilot campaign service](docs/pilot-campaign-state.md) for the local adapter flow
+and the remaining production storage and authorization boundaries.
+
 ## Build and verify a wheel
 
 From the repository root:
