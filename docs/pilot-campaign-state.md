@@ -71,6 +71,8 @@ one, saving the new state and receipt together. `InMemoryCampaignRepository`
 implements this with a lock and isolated JSON snapshots. It also rejects rewriting
 existing history. Production adapters must preserve the same atomic and
 append-only contract; a read followed by an unconditional write is insufficient.
+The [Firestore adapter](firestore-campaign-storage.md) now implements that contract;
+its production configuration and index prerequisites remain unverified.
 
 `execute_command` loads the campaign, checks for a receipt, checks the expected
 revision, executes once, and compare-and-saves. It returns `committed`, `replayed`,
@@ -165,7 +167,7 @@ The complete adapter flow is: authenticate and authorize → load campaign → i
 one command → atomic compare-and-save inside the application service → return an
 allowlisted, sanitized result. Do not expose arbitrary diagnostics, raw source
 copy or command receipts to unauthorized callers. A conflict returns no unsaved
-package. Production storage, authorization, HTTP endpoints, UI, durable work
+package. Production storage configuration, authorization, HTTP endpoints, UI, durable work
 scheduling and external publishing remain later work.
 
 ## Offline verification

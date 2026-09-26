@@ -7,7 +7,8 @@
   draft generation are implemented. Persistence-independent draft revision and
   exact-version approval rules, campaign links, and side-effect-free submission
   preparation are also implemented. Serializable pilot campaign state, application
-  commands, and an in-memory compare-and-save repository are implemented. Publishing, production persistence,
+  commands, an in-memory repository, and an injected-client Firestore storage adapter
+  are implemented. Production storage configuration is unverified. Publishing,
   authorization, and teacher-app integration remain planned; implement them only
   through subsequent tasks.
 - Before making changes, read the relevant sections of
