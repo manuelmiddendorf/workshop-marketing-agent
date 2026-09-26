@@ -106,7 +106,9 @@ network requests and records no submission or publication.
 Campaign state and explicit application commands now support strict JSON snapshots,
 independent channel histories, replay receipts and atomic revision checks. See the
 [pilot campaign service](docs/pilot-campaign-state.md) for the local adapter flow
-and the remaining production storage and authorization boundaries.
+and the remaining authorization boundaries. The [Firestore storage adapter](docs/firestore-campaign-storage.md)
+provides atomic persistence with an injected client; production configuration and
+index prerequisites remain unverified.
 
 ## Build and verify a wheel
 
