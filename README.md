@@ -14,9 +14,11 @@ been verified.
 
 Install uv using the [official installation instructions](https://docs.astral.sh/uv/getting-started/installation/).
 The commands below use **zsh or bash on macOS/Linux**, starting in the repository
-root. `.python-version` selects Python 3.13; uv can download it if needed.
-The package metadata (`>=3.13`) does not claim testing of other Python versions
-or Firebase runtimes.
+root. `.python-version` selects **Python 3.13**, the preferred local development
+and portfolio version; uv can download it if needed. Package metadata permits
+`>=3.11`. Python 3.11 is the tested Firebase-target interpreter, not a verified
+Firebase deployment. See the [runtime verification matrix](docs/python-runtime-compatibility.md)
+for exact tested versions and isolated checks that preserve an existing `.venv`.
 
 ```sh
 uv --version
@@ -46,11 +48,11 @@ export UV_PROJECT_ENVIRONMENT="$(mktemp -d)/venv"
 Keep that setting for the verification session, then run
 `unset UV_PROJECT_ENVIRONMENT` to return to the default project environment.
 
-Pydantic and the official OpenAI Python SDK are runtime dependencies. Importing
+Pydantic, the official OpenAI Python SDK and `google-cloud-firestore` are runtime dependencies. Importing
 the package, validating supplied data, and running routine draft tests need no
 credentials, application configuration or network calls. Initial setup may need
 network access to download Python, dependencies and build tools. Firebase
-libraries remain deferred.
+Callable/Admin libraries remain deferred.
 
 Run the offline behavior tests with:
 
@@ -146,8 +148,10 @@ isolated build dependencies are resolved separately from `uv.lock` using
 a separate `build` installation are unnecessary. Temporary verification
 directories can be removed afterward.
 
-Verification commands, exact versions and actual results are recorded in each PR.
-Other Python versions and target deployment runtimes remain unverified.
+The [two-runtime verification procedure and results](docs/python-runtime-compatibility.md)
+cover the same wheel on Python 3.11 and 3.13, including offline imports and existing
+timezone, Decimal and campaign-restoration checks. Other interpreters, operating
+systems and production deployment runtimes remain unverified.
 
 ## Documentation
 

@@ -3,7 +3,9 @@
 As of September 26, 2026. Status: **Draft for joint review; package, provisional input validation, public pilot import, and review-only pilot generation implemented**.
 
 Confirmed product decisions are documented in [v1-scope.md](v1-scope.md).
-The installable Python package uses Python 3.13 and Hatchling. Provisional
+The installable Python package uses Hatchling and prefers Python 3.13 for local
+development. Python 3.11 is the tested Firebase-target interpreter; see the
+[runtime compatibility boundary](python-runtime-compatibility.md). Provisional
 workshop input models and deterministic offline validation use Pydantic. The
 remaining technical design is a proposal for later implementation. Open questions
 are explicitly marked. A read-only public pilot feed importer and one bounded
@@ -368,7 +370,7 @@ access, tracking, and production Firebase integration.
 
 | Topic | Next step | Required before |
 | --- | --- | --- |
-| Python runtime | Python 3.13 is the chosen and verified package baseline; metadata uses `>=3.13`. Other Python versions and Firebase runtimes remain unverified | Verify the target runtime before Firebase integration |
+| Python runtime | Python 3.13 remains preferred for development; metadata uses `>=3.11`. Python 3.11 and 3.13 pass the [isolated package checks](python-runtime-compatibility.md). Firebase documents `python311`; this is not deployment verification | Verify Callable wiring, target platform and production runtime during Firebase integration |
 | Workshop data model | The [provisional input contract](workshop-data-contract.md#provisional-validation-contract) is implemented and tested offline. Obtain sanitized source evidence and verify identity/version, public-copy selection, pricing, exceptions and aggregates; the [Mal-Yoga pilot](workshop-data-contract.md#mal-yoga-pilot-input-proposal) remains incomplete | Accepting a real pilot snapshot or claiming source compatibility |
 | Concrete data mapping | Check field names, versioning, stored date/price types, route-specific registration/payment event and timestamp, quota units/counts, permissions, and image paths; apply the confirmed studio defaults and full-day deadline rule | Implementing the respective Firebase integration |
 | Execution | Proposal: short, separate server-side actions per channel; measure runtime and define behavior when a request is canceled or the app is closed | Integrating generation into the teacher app and promising background execution |
