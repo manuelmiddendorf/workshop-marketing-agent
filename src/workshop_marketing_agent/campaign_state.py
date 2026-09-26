@@ -84,6 +84,15 @@ class CommandReceipt(FrozenState):
     identity_json: str
     input_fingerprint: Digest
     result: CommandResult
+    service_request: ServiceRequestBinding | None = Field(default=None, exclude_if=lambda value: value is None)
+
+
+class ServiceRequestBinding(FrozenState):
+    """Server-only intent binding; separate from the full domain command identity."""
+
+    request_id: Reference
+    actor_reference: Reference
+    intent_fingerprint: Digest
 
 
 class CampaignState(FrozenState):
@@ -96,6 +105,7 @@ class CampaignState(FrozenState):
     updated_at: datetime
     rounds: tuple[MarketingRound, ...] = ()
     receipts: tuple[CommandReceipt, ...] = ()
+    creation_request: ServiceRequestBinding | None = Field(default=None, exclude_if=lambda value: value is None)
 
     @model_validator(mode="after")
     def consistent(self) -> CampaignState:
@@ -106,6 +116,15 @@ class CampaignState(FrozenState):
         if len(self.receipts) != self.revision:
             raise ValueError("Every aggregate revision must have one command receipt")
         _unique([r.command_id for r in self.receipts])
+        bindings = {} if self.creation_request is None else {self.creation_request.request_id: self.creation_request}
+        if self.creation_request is not None and self.creation_request.actor_reference != self.created_by:
+            raise ValueError("Creation request actor mismatch")
+        for receipt in self.receipts:
+            binding = receipt.service_request
+            if binding is not None:
+                if binding.request_id in bindings and bindings[binding.request_id] != binding:
+                    raise ValueError("Conflicting service request bindings")
+                bindings[binding.request_id] = binding
         for round_ in self.rounds:
             if not round_.purpose.strip() or not self.created_at <= round_.created_at <= self.updated_at:
                 raise ValueError("Invalid round creation metadata")
@@ -148,6 +167,8 @@ class CampaignState(FrozenState):
             raise ValueError("Invalid evidence fingerprint")
         raw_command = identity["command"] | {"expected_revision": index - 1}
         command = COMMAND_ADAPTER.validate_json(json.dumps(raw_command))
+        if receipt.service_request is not None and receipt.service_request.actor_reference != command.actor_reference:
+            raise ValueError("Service request actor mismatch")
         _no_ignored_fields(raw_command, command.model_dump(mode="json"))
         _aware_utc(command.now, field="receipt command time")
         result = receipt.result
@@ -419,6 +440,7 @@ class InMemoryCampaignRepository:
 def _check_successor(previous: CampaignState, updated: CampaignState) -> None:
     """A compare-and-save cannot rewrite historical records or campaign identity."""
     if (previous.workshop_reference != updated.workshop_reference
+            or previous.creation_request != updated.creation_request
             or previous.created_by != updated.created_by or previous.created_at != updated.created_at
             or updated.updated_at < previous.updated_at or updated.receipts[:-1] != previous.receipts
             or len(updated.rounds) < len(previous.rounds)):

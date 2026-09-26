@@ -8,8 +8,10 @@
   exact-version approval rules, campaign links, and side-effect-free submission
   preparation are also implemented. Serializable pilot campaign state, application
   commands, an in-memory repository, and an injected-client Firestore storage adapter
-  are implemented. Production storage configuration is unverified. Publishing,
-  authorization, and teacher-app integration remain planned; implement them only
+  are implemented, along with a framework-independent teacher service that requires
+  verified server context and an injected access policy. Production storage
+  configuration and concrete teacher access rules are unverified. Publishing,
+  Firebase Callable and teacher-app integration remain planned; implement them only
   through subsequent tasks.
 - Before making changes, read the relevant sections of
   [docs/architecture.md](docs/architecture.md) and [docs/v1-scope.md](docs/v1-scope.md).

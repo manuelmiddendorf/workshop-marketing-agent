@@ -429,3 +429,23 @@ def test_realistic_grpc_cause_preserves_confirmed_rejection(repo, initial, clien
         repo.compare_and_save(candidate(initial), expected_revision=0)
     assert "SECRET" not in "".join(traceback.format_exception(caught.value))
     assert client.documents == before
+
+
+@pytest.mark.parametrize("with_receipt", [False, True])
+def test_legacy_snapshots_keep_exact_canonical_bytes_and_load(repo, client, initial, with_receipt):
+    """Before service bindings existed these optional keys were completely absent."""
+    from workshop_marketing_agent.revision import _fingerprint_payload
+    state = candidate(initial) if with_receipt else initial
+    if with_receipt:
+        assert repo.compare_and_save(state, expected_revision=0)
+    envelope = json.loads(dump_campaign(state))
+    envelope["state"].pop("creation_request", None)
+    for receipt in envelope["state"]["receipts"]:
+        receipt.pop("service_request", None)
+    envelope["state_fingerprint"] = _fingerprint_payload(envelope["state"])
+    original = json.dumps(envelope, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
+    document = stored_data(client)
+    document["snapshot_json"] = original
+    document["snapshot_fingerprint"] = envelope["state_fingerprint"]
+    assert repo.load("c-1") == state
+    assert dump_campaign(repo.load("c-1")) == original

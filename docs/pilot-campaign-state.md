@@ -5,6 +5,8 @@ serializable `CampaignState`. This is a local application boundary, not a server
 database adapter, permission system, or publishing implementation. It reuses the
 [revision and approval rules](draft-revision-approval.md) and
 [submission preparation](submission-preparation.md).
+The separate [teacher service facade](pilot-teacher-service.md) now supplies
+verified server context, injected access checks and strict client-intent requests.
 
 ## State and history
 
@@ -105,6 +107,13 @@ A crash before saving can likewise leave a model call unrecorded. There is no
 external exactly-once guarantee, reservation infrastructure, or automatic retry.
 Rejected transitions and losing save attempts have no committed receipt.
 
+The teacher facade may additionally store a server-only `ServiceRequestBinding`
+on a receipt (or on campaign creation). It binds authenticated actor and normalized
+client intent independently of sampled time/evidence. The full command identity
+above is unchanged. The facade retrieves matching historical receipts before
+calling providers; it does not rebuild a different command under the old ID.
+Absent bindings are omitted, preserving pre-service canonical JSON exactly.
+
 ## Strict JSON restoration
 
 `dump_campaign` produces a JSON envelope with the state and a snapshot fingerprint.
@@ -167,7 +176,7 @@ The complete adapter flow is: authenticate and authorize → load campaign → i
 one command → atomic compare-and-save inside the application service → return an
 allowlisted, sanitized result. Do not expose arbitrary diagnostics, raw source
 copy or command receipts to unauthorized callers. A conflict returns no unsaved
-package. Production storage configuration, authorization, HTTP endpoints, UI, durable work
+package. Production storage configuration, concrete teacher access rules, HTTP endpoints, UI, durable work
 scheduling and external publishing remain later work.
 
 ## Offline verification

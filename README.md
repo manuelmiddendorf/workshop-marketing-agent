@@ -109,6 +109,9 @@ independent channel histories, replay receipts and atomic revision checks. See t
 and the remaining authorization boundaries. The [Firestore storage adapter](docs/firestore-campaign-storage.md)
 provides atomic persistence with an injected client; production configuration and
 index prerequisites remain unverified.
+The [teacher service boundary](docs/pilot-teacher-service.md) validates action
+requests, requires verified server context and workshop access, and returns safe
+review views. Concrete access rules and Firebase Callable deployment remain open.
 
 ## Build and verify a wheel
 
