@@ -157,8 +157,14 @@ The [pilot campaign application service](pilot-campaign-state.md) implements ser
 rounds, immutable histories, exact approvals and prepared packages, command receipts,
 and an atomic compare-and-save boundary. The [Firestore storage adapter](firestore-campaign-storage.md)
 implements the production repository contract with an injected client. Production
-configuration and indexes remain unverified; authorization and publication records
+configuration and indexes remain unverified; concrete access-policy integration and publication records
 remain planned.
+
+The [teacher service facade](pilot-teacher-service.md) now checks an injected
+workshop-access policy against verified server context before loading state or
+calling providers. It supplies fresh evidence, binds durable request intent and
+returns allowlisted historical views. Concrete teacher access rules, Firebase
+Callable wiring and deployment remain unimplemented.
 
 A workshop has a marketing campaign with multiple marketing
 rounds, such as an initial announcement and a reminder. Correcting a publication
@@ -195,7 +201,7 @@ The implemented persistence-independent approval uses a canonical SHA-256
 fingerprint over the exact approval-bound content, facts, channel, source, link,
 and image selection. Campaign JSON restoration verifies these bindings; stored
 statuses do not establish fresh readiness. Production storage configuration and
-authorization remain future integration work.
+concrete teacher access rules remain future integration work.
 
 Published posts that need changes are visibly flagged when the current data is
 checked. V1 does not promise scheduled background corrections. Teachers initiate

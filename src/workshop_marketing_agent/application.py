@@ -13,6 +13,7 @@ from .campaign_state import (
     ApprovalRecord, CampaignRepository, CampaignState, ChannelState, CommandReceipt,
     CommandResult, FrozenState, MarketingRound, Reference, SubmissionRecord, VersionRecord,
     dump_campaign, restore_campaign,
+    ServiceRequestBinding,
 )
 from .feed import FeedImportResult
 from .generation import DraftClient, GenerationMetadata, WorkshopFacts
@@ -134,11 +135,16 @@ def _identity(command: Command, evidence: FeedImportResult | None) -> tuple[str,
 
 def execute_command(repository: CampaignRepository, command: PilotCommand, *,
                     evidence: FeedImportResult | None = None,
-                    client: DraftClient | None = None) -> CommandOutcome:
+                    client: DraftClient | None = None,
+                    service_request: ServiceRequestBinding | None = None) -> CommandOutcome:
     """Load, execute once, atomically compare-and-save state plus receipt. Never retry AI."""
     # Reject unchecked model_copy changes before consulting receipts or invoking a boundary.
     command = COMMAND_ADAPTER.validate_json(command.model_dump_json())
     _aware_utc(command.now, field="now")
+    if service_request is not None:
+        service_request = ServiceRequestBinding.model_validate_json(service_request.model_dump_json())
+        if service_request.actor_reference != command.actor_reference:
+            raise ValueError("Service request actor mismatch")
     if evidence is not None:
         evidence = EVIDENCE_ADAPTER.validate_json(EVIDENCE_ADAPTER.dump_json(evidence))
     identity_json, fingerprint = _identity(command, evidence)
@@ -149,7 +155,7 @@ def execute_command(repository: CampaignRepository, command: PilotCommand, *,
     state = restore_campaign(dump_campaign(state))
     prior = next((r for r in state.receipts if r.command_id == command.command_id), None)
     if prior is not None:
-        if prior.input_fingerprint != fingerprint:
+        if prior.input_fingerprint != fingerprint or prior.service_request != service_request:
             return CommandOutcome(status="conflict", message="Command ID was used with different input")
         return CommandOutcome(status="replayed", result=prior.result)
     if state.revision != command.expected_revision:
@@ -163,7 +169,7 @@ def execute_command(repository: CampaignRepository, command: PilotCommand, *,
     except ValueError as error:
         return CommandOutcome(status="rejected", message=str(error))
     receipt = CommandReceipt(command_id=command.command_id, identity_json=identity_json,
-                             input_fingerprint=fingerprint, result=result)
+                             input_fingerprint=fingerprint, result=result, service_request=service_request)
     updated = state.model_copy(update={
         "rounds": rounds, "revision": state.revision + 1, "updated_at": command.now,
         "receipts": state.receipts + (receipt,),

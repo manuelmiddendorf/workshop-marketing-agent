@@ -13,6 +13,9 @@ The collection is a single root collection with an intentionally narrow name:
 1–100 ASCII letters, digits, hyphens or underscores, beginning with a letter.
 Paths, reserved names and implicit/default collection selection are rejected.
 Actor references and stored approvals never authorize access or publication.
+The [teacher service facade](pilot-teacher-service.md) now enforces this ordering
+through injected verified context and an access checker. Concrete Firebase Auth
+wiring and existing teacher access rules still require separate integration.
 
 ## Document contract
 
