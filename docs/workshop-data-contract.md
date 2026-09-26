@@ -67,6 +67,11 @@ and offline tests exercise only this provisional contract. Real identity/version
 source selection, price classification, exception review, rights and shared
 aggregate evidence remain later integration prerequisites.
 
+The [read-only public feed importer](public-workshop-feed.md) consumes this
+representation without mapping source aliases. It separately checks envelope,
+identity and active/scheduled event status; existing fact and claim rules remain
+unchanged. Historical pilot evidence below is not a current feed observation.
+
 ## Mal-Yoga pilot input proposal
 
 **Owner-reported progress (September 24, 2026):** the website and booking routes
