@@ -394,7 +394,16 @@ def _prose_errors(
     audience: str | None,
 ) -> list[str]:
     display = _display(facts)
-    errors = [f"missing exact {name}" for name, value in display.items() if value not in text]
+    # Campaign identifiers can look like dates, prices or claim words. Check the
+    # full URL separately rather than treating query data as marketing prose.
+    urls = re.findall(r"https?://[^\s<>\])]+", text)
+    text = re.sub(r"https?://[^\s<>\])]+", "", text)
+    errors = [
+        f"missing exact {name}" for name, value in display.items()
+        if name != "booking_url" and value not in text
+    ]
+    if not any(url == facts.booking_url or url.rstrip(".,;") == facts.booking_url for url in urls):
+        errors.append("missing exact booking_url")
     normalized = text.casefold()
 
     allowed_dates = {display["date"], facts.local_date.isoformat()}
@@ -425,8 +434,8 @@ def _prose_errors(
         numeric = Decimal(re.search(r"\d+(?:[.,]\d+)?", amount).group().replace(",", "."))
         if numeric not in allowed_prices:
             errors.append("conflicting price")
-    for url in re.findall(r"https?://[^\s<>\])]+", text):
-        if url.rstrip(".,;") != facts.booking_url:
+    for url in urls:
+        if url != facts.booking_url and url.rstrip(".,;") != facts.booking_url:
             errors.append("conflicting booking URL")
     for count in re.findall(
         r"\b(\d+)\s+(?:freie|verfügbare|restliche)\s+(?:Plätze|Personenplätze)\b",
