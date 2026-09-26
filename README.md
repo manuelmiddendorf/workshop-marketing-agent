@@ -6,7 +6,7 @@ channel adapters, and evaluation.
 **Status:** The package includes provisional workshop input models, deterministic
 offline validation, a read-only public pilot feed importer, review-only pilot
 draft generation, and persistence-independent revision and exact-version
-approval rules for Google Business Profile and Rausgegangen. Publishing and
+approval and submission-preparation rules for Google Business Profile and Rausgegangen. Publishing and
 teacher-app integration remain planned. Firestore document compatibility has not
 been verified.
 
@@ -98,6 +98,10 @@ explicit model and `OPENAI_API_KEY`; it creates no external post.
 The [revision and exact-version approval workflow](docs/draft-revision-approval.md)
 keeps immutable per-channel history and rechecks current imported evidence. Its
 approval record is readiness for one fingerprint, not permission to publish.
+
+Tracked links are bound before approval. See the [submission preparation flow](docs/submission-preparation.md)
+for exact Google payloads and Rausgegangen copy packages. Preparation makes no
+network requests and records no submission or publication.
 
 ## Build and verify a wheel
 

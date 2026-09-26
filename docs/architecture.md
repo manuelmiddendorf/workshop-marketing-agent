@@ -8,7 +8,7 @@ workshop input models and deterministic offline validation use Pydantic. The
 remaining technical design is a proposal for later implementation. Open questions
 are explicitly marked. A read-only public pilot feed importer and one bounded
 Google Business/Rausgegangen draft, revision, and exact-version approval paths
-are implemented without persistence; publishing and
+are implemented without persistence, together with [tracked-link submission preparation](submission-preparation.md); publishing and
 integration with the teacher app remain unimplemented.
 
 ## 1. Purpose and architectural principles

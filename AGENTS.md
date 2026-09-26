@@ -5,7 +5,8 @@
 - The Python package foundation, provisional workshop input validation, read-only
   public pilot feed importer, and review-only Google Business/Rausgegangen pilot
   draft generation are implemented. Persistence-independent draft revision and
-  exact-version approval rules are also implemented. Publishing, persistence,
+  exact-version approval rules, campaign links, and side-effect-free submission
+  preparation are also implemented. Publishing, persistence,
   authorization, and teacher-app integration remain planned; implement them only
   through subsequent tasks.
 - Before making changes, read the relevant sections of

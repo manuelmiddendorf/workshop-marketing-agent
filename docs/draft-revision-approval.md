@@ -39,7 +39,7 @@ contains every approval-bound field:
 - workshop ID, channel, and source version;
 - deterministic workshop facts;
 - the complete typed channel content, including structured channel fields;
-- canonical booking URL; and
+- canonical booking URL, plus campaign metadata and the exact final URL for tracked versions; and
 - exact selected image reference or JSON `null` for explicit absence.
 
 Creation time, parent fingerprint, revision origin, validation diagnostics, and
@@ -60,6 +60,10 @@ boundary. It revalidates with the supplied current time and returns `outdated` o
 inactive or unsupported event status, stale availability, an expired promoted
 offer, unsupported wording, image problems, or a new conflict. It never revises,
 approves, submits, or publishes automatically.
+
+See [submission preparation](submission-preparation.md) for binding tracked links
+before approval and preparing exact channel fields afterward. Untracked versions
+retain their original fingerprints and cannot be silently upgraded.
 
 ## Images and remaining channel limitations
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -13,6 +14,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, ValidationError, ValidationInfo, field_validator
 
 from .feed import FeedImportResult
+from .campaign import CampaignMetadata, build_campaign_link
 from .generation import (
     DraftClient,
     DraftGenerationResult,
@@ -40,7 +42,7 @@ REVISION_SCHEMA_VERSION = "pilot-revision.v1"
 MAX_REVISION_INSTRUCTION_CHARS = 500
 
 ChannelId = Literal["google_business", "rausgegangen"]
-RevisionOrigin = Literal["generation", "human_edit", "ai_revision"]
+RevisionOrigin = Literal["generation", "human_edit", "ai_revision", "campaign_link"]
 ChannelDraft = GoogleBusinessDraft | RausgegangenDraft
 
 
@@ -72,7 +74,7 @@ class DraftVersionValidation:
 
 def _approval_payload(version: DraftVersion) -> dict[str, object]:
     """Return every field that an approval binds, in canonical JSON-compatible form."""
-    return {
+    payload = {
         "workshop_id": version.workshop_id,
         "channel": version.channel,
         "source_version": version.source_version,
@@ -81,6 +83,10 @@ def _approval_payload(version: DraftVersion) -> dict[str, object]:
         "canonical_booking_url": version.canonical_booking_url,
         "selected_image_reference": version.selected_image_reference,
     }
+    if version.campaign is not None or version.final_booking_url is not None:
+        payload["campaign"] = version.campaign.model_dump(mode="json") if version.campaign else None
+        payload["final_booking_url"] = version.final_booking_url
+    return payload
 
 
 def _fingerprint_payload(payload: Mapping[str, object]) -> str:
@@ -108,6 +114,8 @@ class DraftVersion:
     revision_origin: RevisionOrigin
     validation: DraftVersionValidation
     generation_metadata: GenerationMetadata | None = None
+    campaign: CampaignMetadata | None = None
+    final_booking_url: str | None = None
 
     @property
     def fingerprint(self) -> str:
@@ -160,6 +168,8 @@ class DraftApproval:
     approved_content: ChannelDraft
     canonical_booking_url: str
     selected_image_reference: str | None
+    campaign: CampaignMetadata | None = None
+    final_booking_url: str | None = None
 
     def matches(self, version: DraftVersion) -> bool:
         """Approval never transfers to a version with a different bound payload."""
@@ -171,6 +181,8 @@ class DraftApproval:
             and self.approved_content == version.content
             and self.canonical_booking_url == version.canonical_booking_url
             and self.selected_image_reference == version.selected_image_reference
+            and self.campaign == version.campaign
+            and self.final_booking_url == version.final_booking_url
         )
 
 
@@ -331,6 +343,8 @@ def _version_validation(
     selected_image_reference: str | None,
     now: datetime,
     bound_facts: WorkshopFacts | None = None,
+    campaign: CampaignMetadata | None = None,
+    final_booking_url: str | None = None,
 ) -> tuple[DraftVersionValidation, WorkshopFacts | None]:
     validation, diagnostics = _revalidate(imported, now)
     blocking: list[Diagnostic] = list(_promotion_diagnostics(imported))
@@ -359,6 +373,17 @@ def _version_validation(
             "draft.channel", "conflicting", "Draft content belongs to another channel", "draft"
         ))
     if facts is not None:
+        if campaign is not None or final_booking_url is not None:
+            try:
+                if campaign is None or campaign.workshop != facts.workshop_id or campaign.channel != channel:
+                    raise ValueError("Campaign identity or channel differs from the draft")
+                if final_booking_url != build_campaign_link(facts.booking_url, campaign):
+                    raise ValueError("Final URL differs from the canonical destination and campaign contract")
+            except ValueError as error:
+                blocking.append(Diagnostic("draft.tracking", "conflicting", str(error), "draft"))
+            else:
+                # Only the expected display link changes; source facts stay canonical.
+                facts = facts.model_copy(update={"booking_url": final_booking_url})
         blocking.extend(_structure_diagnostics(content, facts))
         for message in _prose_errors(
             _content_text(content),
@@ -393,6 +418,8 @@ def _new_version(
     parent_fingerprint: str | None,
     metadata: GenerationMetadata | None,
     bound_facts: WorkshopFacts,
+    campaign: CampaignMetadata | None = None,
+    final_booking_url: str | None = None,
 ) -> DraftVersion:
     validation, _ = _version_validation(
         imported=imported,
@@ -401,6 +428,8 @@ def _new_version(
         selected_image_reference=selected_image_reference,
         now=now,
         bound_facts=bound_facts,
+        campaign=campaign,
+        final_booking_url=final_booking_url,
     )
     return DraftVersion(
         workshop_id=bound_facts.workshop_id,
@@ -415,6 +444,8 @@ def _new_version(
         revision_origin=origin,
         validation=validation,
         generation_metadata=metadata,
+        campaign=campaign,
+        final_booking_url=final_booking_url,
     )
 
 
@@ -518,6 +549,8 @@ def revise_draft_directly(
         parent_fingerprint=parent.fingerprint,
         metadata=None,
         bound_facts=parent.workshop_facts,
+        campaign=parent.campaign,
+        final_booking_url=parent.final_booking_url,
     )
     revised = _append_version(workflow, version)
     return RevisionResult(
@@ -540,7 +573,9 @@ def _revision_prompt_input(
     payload = {
         "selected_channel": parent.channel,
         "validated_facts": parent.workshop_facts.model_dump(mode="json"),
-        "fact_display": _display(parent.workshop_facts),
+        "fact_display": _display(parent.workshop_facts.model_copy(update={
+            "booking_url": parent.final_booking_url or parent.canonical_booking_url
+        })),
         "supported_optional_claims": _supported_claims(workshop, validation.claims),
         "original_description_html": workflow.original_description_html,
         "current_draft": parent.content.model_dump(mode="json"),
@@ -694,6 +729,8 @@ def revise_draft_with_ai(
         revision_origin="ai_revision",
         validation=version.validation,
         generation_metadata=metadata,
+        campaign=version.campaign,
+        final_booking_url=version.final_booking_url,
     )
     revised_workflow = DraftWorkflow(
         workflow.workshop_id,
@@ -783,6 +820,8 @@ def check_approval_readiness(
         selected_image_reference=version.selected_image_reference,
         now=now,
         bound_facts=version.workshop_facts,
+        campaign=version.campaign,
+        final_booking_url=version.final_booking_url,
     )
     if current_version_validation.status != "valid":
         return ApprovalReadiness("outdated", current_version_validation.blocking_diagnostics)
@@ -815,5 +854,55 @@ def approve_draft_version(
         approved_content=version.content,
         canonical_booking_url=version.canonical_booking_url,
         selected_image_reference=version.selected_image_reference,
+        campaign=version.campaign,
+        final_booking_url=version.final_booking_url,
     )
     return ApprovalResult("approved", approval, readiness.diagnostics)
+
+
+def bind_campaign_link(
+    workflow: DraftWorkflow,
+    imported: FeedImportResult,
+    *,
+    campaign: CampaignMetadata,
+    now: datetime,
+) -> RevisionResult:
+    """Append a version with the final URL before human review and approval."""
+    now = _aware_utc(now, field="now")
+    campaign = CampaignMetadata.model_validate_json(campaign.model_dump_json())
+    parent = workflow.current(campaign.channel)
+    if campaign.workshop != parent.workshop_id or workflow.workshop_id != parent.workshop_id:
+        raise ValueError("Campaign workshop must match the selected draft")
+    final_url = build_campaign_link(parent.canonical_booking_url, campaign)
+    previous_url = parent.final_booking_url or parent.canonical_booking_url
+
+    def update_text(text: str) -> str:
+        # Match complete URL tokens, never prefixes of unrelated destinations.
+        def substitute(match: re.Match[str]) -> str:
+            token = match.group()
+            url = token if token == previous_url else token.rstrip(".,;")
+            return final_url + token[len(url):] if url == previous_url else token
+        return re.sub(r"https?://[^\s<>\])]+", substitute, text)
+
+    content = parent.content
+    if isinstance(content, GoogleBusinessDraft):
+        content = content.model_copy(update={
+            "title": update_text(content.title), "body": update_text(content.body),
+            "booking_action": content.booking_action.model_copy(update={"url": final_url}),
+        })
+    else:
+        content = content.model_copy(update={
+            "title": update_text(content.title), "description": update_text(content.description),
+            "fact_sheet": content.fact_sheet.model_copy(update={"ticket_url": final_url}),
+        })
+    version = _new_version(
+        imported=imported, channel=parent.channel, content=content,
+        selected_image_reference=parent.selected_image_reference, now=now,
+        origin="campaign_link", parent_fingerprint=parent.fingerprint,
+        metadata=None, bound_facts=parent.workshop_facts,
+        campaign=campaign, final_booking_url=final_url,
+    )
+    return RevisionResult(
+        "revised" if version.validation.status == "valid" else "review_required",
+        _append_version(workflow, version), version, version.validation.diagnostics,
+    )
