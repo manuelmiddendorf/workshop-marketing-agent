@@ -105,7 +105,9 @@ approval record is readiness for one fingerprint, not permission to publish.
 
 Tracked links are bound before approval. See the [submission preparation flow](docs/submission-preparation.md)
 for exact Google payloads and Rausgegangen copy packages. Preparation makes no
-network requests and records no submission or publication.
+network requests and records no submission or publication. The separate
+[Google Local Posts transport](docs/google-local-posts.md) is offline-tested and
+not yet connected to campaign commands or Firebase.
 
 Campaign state and explicit application commands now support strict JSON snapshots,
 independent channel histories, replay receipts and atomic revision checks. See the

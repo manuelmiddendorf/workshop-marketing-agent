@@ -238,6 +238,10 @@ confirmation step. An adapter does not need to support all modes or implement
 publishing. Account configuration and credentials also determine which supported
 actions are currently available.
 
+The [Google Local Posts transport](google-local-posts.md) now supports offline-tested
+create, update and get operations with injected credentials and HTTP. It is not
+connected to campaign commands or Firebase; live access remains unverified.
+
 Google is the planned first external automatic channel. Rausgegangen and HIMBEER
 start with assisted manual listings. A manual fallback may be offered without
 reporting a failed API attempt as successful. The studio's workshop page remains
