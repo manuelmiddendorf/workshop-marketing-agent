@@ -10,8 +10,9 @@ workshop input models and deterministic offline validation use Pydantic. The
 remaining technical design is a proposal for later implementation. Open questions
 are explicitly marked. A read-only public pilot feed importer and one bounded
 Google Business/Rausgegangen draft, revision, and exact-version approval paths
-are implemented without persistence, together with [tracked-link submission preparation](submission-preparation.md); publishing and
-integration with the teacher app remain unimplemented.
+are implemented independently of persistence, together with [tracked-link submission preparation](submission-preparation.md).
+The [publication service](google-publication-service.md) is offline-tested; production
+publishing configuration and integration with the teacher app remain unimplemented.
 
 ## 1. Purpose and architectural principles
 
@@ -160,7 +161,9 @@ rounds, immutable histories, exact approvals and prepared packages, command rece
 and an atomic compare-and-save boundary. The [Firestore storage adapter](firestore-campaign-storage.md)
 implements the production repository contract with an injected client. Production
 configuration and indexes remain unverified. Durable publication reservations and
-append-only recorded result history are implemented; provider operations remain planned.
+append-only recorded result history are implemented. The [Google publication service](google-publication-service.md)
+now connects reservations and recorded outcomes to the injected transport; live operation
+remains unverified.
 
 The [teacher service facade](pilot-teacher-service.md) now checks an injected
 workshop-access policy against verified server context before loading state or
@@ -200,8 +203,9 @@ bind the exact approved/prepared version and payload to one campaign-wide target
 per channel across rounds. A known post selects update; missing update identity,
 in-progress, submitted and unknown outcomes block another reservation. Events
 record trusted Google results or separate Rausgegangen teacher confirmations;
-they are recorded evidence, not independently verified provider state. No new
-Callable action or provider request is implemented.
+they are recorded evidence, not independently verified provider state. The
+publication service performs one injected provider operation between committed
+reservation and result. Firebase Google configuration and live execution remain unverified.
 
 Approvals apply to a specific version. Changes to its text, image, or link
 invalidate approval. Changes to relevant workshop facts and expired price
@@ -239,8 +243,9 @@ publishing. Account configuration and credentials also determine which supported
 actions are currently available.
 
 The [Google Local Posts transport](google-local-posts.md) now supports offline-tested
-create, update and get operations with injected credentials and HTTP. It is not
-connected to campaign commands or Firebase; live access remains unverified.
+create, update and get operations with injected credentials and HTTP. The [publication service](google-publication-service.md) connects it to durable
+reservation/result commands with one possible dispatch. Firebase Google configuration
+and live access remain unverified.
 
 Google is the planned first external automatic channel. Rausgegangen and HIMBEER
 start with assisted manual listings. A manual fallback may be offered without

@@ -107,7 +107,8 @@ Tracked links are bound before approval. See the [submission preparation flow](d
 for exact Google payloads and Rausgegangen copy packages. Preparation makes no
 network requests and records no submission or publication. The separate
 [Google Local Posts transport](docs/google-local-posts.md) is offline-tested and
-not yet connected to campaign commands or Firebase.
+connected through the [publication service](docs/google-publication-service.md);
+Firebase Google configuration and live access remain unverified.
 
 Campaign state and explicit application commands now support strict JSON snapshots,
 independent channel histories, replay receipts and atomic revision checks. See the
