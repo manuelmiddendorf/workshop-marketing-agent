@@ -14,6 +14,7 @@ from .campaign import Reference, build_campaign_link
 from .revision import ChannelId, DraftApproval, DraftVersion, _aware_utc, _fingerprint_payload
 from .submission import PreparedSubmission, _google_payload, _rausgegangen_payload
 from .validation import Diagnostic
+from .publication import PublicationAttempt, PUBLICATION_KINDS, validate_publications
 
 Digest = Annotated[str, Field(pattern=r"^[0-9a-f]{64}$")]
 
@@ -51,6 +52,7 @@ class ChannelState(FrozenState):
     current_version: Reference | None = None
     approvals: tuple[ApprovalRecord, ...] = ()
     submissions: tuple[SubmissionRecord, ...] = ()
+    publications: tuple[PublicationAttempt, ...] = Field(default=(), exclude_if=lambda value: not value)
     # Historical observations, never authorization or proof of current readiness.
     last_status: Literal["review_required", "revised", "approved", "ready", "ready_to_copy", "outdated"] = "review_required"
     diagnostics: tuple[Diagnostic, ...] = ()
@@ -71,11 +73,12 @@ class CommandResult(FrozenState):
     revision: Annotated[int, Field(ge=1)]
     round_reference: Reference
     channel: ChannelId | None
-    status: Literal["started", "selected", "enabled", "disabled", "revised", "review_required", "approved", "ready", "ready_to_copy", "outdated"]
+    status: Literal["started", "selected", "enabled", "disabled", "revised", "review_required", "approved", "ready", "ready_to_copy", "outdated", "in_progress", "submitted", "published", "failed", "outcome_unknown"]
     version_reference: Reference | None = None
     approval_reference: Reference | None = None
     submission_reference: Reference | None = None
     diagnostics: tuple[Diagnostic, ...] = ()
+    attempt_reference: Reference | None = Field(default=None, exclude_if=lambda value: value is None)
 
 
 class CommandReceipt(FrozenState):
@@ -149,6 +152,7 @@ class CampaignState(FrozenState):
                     if (result is None or getattr(result, field) != record.reference
                             or result.round_reference != round_.reference or result.channel != channel.channel):
                         raise ValueError("Historical record has no matching creating command receipt")
+        validate_publications(self)
         return self
 
     def _check_receipt(self, receipt: CommandReceipt, index: int, previous_time: datetime) -> datetime:
@@ -193,6 +197,12 @@ class CampaignState(FrozenState):
             return command.now
         if command.now < round_.created_at:
             raise ValueError("Command predates its round")
+        if command.kind in PUBLICATION_KINDS:
+            if command.kind == "reserve_publication" and digest is None:
+                raise ValueError("Reservation requires an evidence fingerprint")
+            # Publication-specific references, events and chronological target selection
+            # are checked together after the generic receipt identity checks.
+            return command.now
         if command.kind not in ("select_version", "set_channel_enabled") and digest is None:
             raise ValueError("Command receipt requires an evidence fingerprint")
         channel = next(c for c in round_.channels if c.channel == channel_id)
@@ -456,3 +466,9 @@ def _check_successor(previous: CampaignState, updated: CampaignState) -> None:
                 after = getattr(new_channel, field)
                 if after[:len(before)] != before:
                     raise ValueError("Existing channel history is immutable")
+            if len(new_channel.publications) < len(old_channel.publications):
+                raise ValueError("Publication attempts cannot be removed")
+            for before, after in zip(old_channel.publications, new_channel.publications):
+                if (before.model_dump(exclude={"events"}) != after.model_dump(exclude={"events"})
+                        or after.events[:len(before.events)] != before.events):
+                    raise ValueError("Publication bindings and earlier events are immutable")
