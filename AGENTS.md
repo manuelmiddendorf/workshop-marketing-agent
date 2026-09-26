@@ -2,10 +2,10 @@
 
 ## Project phase and source of truth
 
-- The Python package foundation and provisional workshop input validation are
-  implemented, along with the read-only public pilot feed importer. Generation
-  and teacher-app integration remain planned; implement them only through
-  subsequent tasks.
+- The Python package foundation, provisional workshop input validation, read-only
+  public pilot feed importer, and review-only Google Business/Rausgegangen pilot
+  draft generation are implemented. Publishing and teacher-app integration remain
+  planned; implement them only through subsequent tasks.
 - Before making changes, read the relevant sections of
   [docs/architecture.md](docs/architecture.md) and [docs/v1-scope.md](docs/v1-scope.md).
   They distinguish confirmed decisions, technical proposals, and open questions.
@@ -36,8 +36,8 @@
 ## Technical guidelines
 
 - Prefer simple, explicit Python functions and understandable types.
-- Current tools: Python type annotations, Pydantic, and pytest through uv.
-  The official OpenAI SDK remains planned. Use the project's locked environment.
+- Current tools: Python type annotations, Pydantic, the official OpenAI Python
+  SDK, and pytest through uv. Use the project's locked environment.
 - Do not use agent frameworks, dynamic plugin systems, or large inheritance trees.
 - Keep business rules independent of the Firestore schema, frontend, and actual
   secrets. The Firebase integration maps data, checks access, and stores results.

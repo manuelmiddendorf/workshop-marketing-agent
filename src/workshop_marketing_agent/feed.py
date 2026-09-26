@@ -39,10 +39,14 @@ class FeedImportResult:
     @property
     def promotion_eligible(self) -> bool:
         """Core usability plus feed/event checks, never permission to publish."""
+        workshop = self.validation.workshop if self.validation is not None else None
+        provenance = workshop.provenance if workshop is not None else {}
         return (
             self.validation is not None
             and self.validation.usable
             and not self.import_diagnostics
+            and provenance.get("active") is True
+            and provenance.get("event_status") == "scheduled"
         )
 
 

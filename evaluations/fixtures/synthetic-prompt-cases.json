@@ -1,0 +1,33 @@
+{
+  "fixture_kind": "synthetic_evaluation_cases",
+  "reference_time": "2026-10-26T10:00:00Z",
+  "model": "test-structured-model",
+  "settings": {
+    "timeout_seconds": 12,
+    "max_output_tokens": 1200,
+    "automatic_retries": 0
+  },
+  "input_fixture": "../../examples/workshops/synthetic-complete-input.json",
+  "stored_valid_response": "../../tests/fixtures/generation/valid-wording.json",
+  "cases": [
+    {
+      "id": "valid",
+      "expected_hard_check": "pass"
+    },
+    {
+      "id": "altered-price",
+      "mutation": "Replace 120,00 EUR display with 1,00 EUR in Google wording",
+      "expected_hard_check": "fail"
+    },
+    {
+      "id": "expired-offer",
+      "mutation": "Add a current early-bird claim after its supplied deadline",
+      "expected_hard_check": "fail"
+    },
+    {
+      "id": "altered-ticket-url",
+      "mutation": "Replace the canonical booking URL in Rausgegangen wording",
+      "expected_hard_check": "fail"
+    }
+  ]
+}
