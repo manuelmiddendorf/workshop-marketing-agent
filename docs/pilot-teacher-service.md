@@ -15,7 +15,7 @@ Construct `ServiceDependencies` explicitly with:
 - `repository`: the existing `CampaignRepository`, including the
   [Firestore adapter](firestore-campaign-storage.md) with a server-created client.
 - `check_access(principal, workshop_reference)`: existing teacher-access policy,
-  supplied by a future integration. Only the literal result `True` grants access;
+  supplied by the integration adapter. Only the literal result `True` grants access;
   missing, ambiguous or exceptional decisions fail closed.
 - `clock()`: aware server time. Domain timestamps are never browser values.
 - `endpoint_for(workshop_reference)`: trusted configuration returning the complete
@@ -39,7 +39,7 @@ by trusted server code. Its subject is the verified authentication identity, not
 a name/email or a browser field. Recorded actors are deterministic `teacher-`
 plus SHA-256 of that subject. This is a stable pseudonymous reference, not proof
 of access or anonymization. Project/tenant scoping must be consistent in the
-future wrapper; do not combine unrelated authentication namespaces.
+wrapper; do not combine unrelated authentication namespaces.
 
 The sequence is authentication context → strict request validation → workshop
 allowlist → affirmative workshop access → channel allowlist → campaign load and
@@ -196,23 +196,17 @@ this is not a semantic redactor for arbitrary sensitive text supplied as copy.
 The service logs nothing. Injected boundaries and the future wrapper must also
 avoid logging raw requests, source/model bodies, exceptions or traceback locals.
 
-## Future Callable wiring and remaining prerequisites
+## Callable wiring and remaining prerequisites
 
-The [official Callable documentation](https://firebase.google.com/docs/functions/callable)
-(checked September 26, 2026) distinguishes Python `req.data` from authenticated
-`req.auth` context. A future wrapper must construct `VerifiedPrincipal` from
-verified `req.auth.uid` (or pass null when unauthenticated), and call
-`service.handle(req.data, principal=principal)`. Never construct the principal
-from a UID, actor or token supplied inside `req.data`. Authentication alone does
-not establish workshop access; inject the separately verified teacher policy.
+The [Firebase Callable adapter](firebase-callable.md) now constructs principals
+from SDK-verified context, resolves current Auth accounts and teacher roles, and
+supplies the trusted pilot dependencies. Its integration code stays outside this
+framework-independent service. The service contract and business rules are unchanged.
 
-Still required: inspect/implement existing teacher access rules; confirm tenant
-and project/database/collection allowlists; configure server secrets and clients;
-verify Firestore indexes/IAM; choose the model; measure a total deployment timeout
-covering feed/model/storage; define client cancellation/retry behavior; then add
-and deploy the Callable wrapper. None is configured or verified by this change.
-There are no live provider calls, Firestore writes, teacher-app modifications,
-Firebase decorators, web framework, publishing or participant data in this task.
+Deployment, model selection/configuration, Secret Manager access, production
+Firestore IAM/indexes, App Check client integration and teacher-app behavior still
+need operational verification. The adapter document records local packaging and
+offline checks; none establishes production readiness or publishing approval.
 
 ## Offline verification
 

@@ -159,14 +159,15 @@ The [pilot campaign application service](pilot-campaign-state.md) implements ser
 rounds, immutable histories, exact approvals and prepared packages, command receipts,
 and an atomic compare-and-save boundary. The [Firestore storage adapter](firestore-campaign-storage.md)
 implements the production repository contract with an injected client. Production
-configuration and indexes remain unverified; concrete access-policy integration and publication records
+configuration and indexes remain unverified; production access-policy verification and publication records
 remain planned.
 
 The [teacher service facade](pilot-teacher-service.md) now checks an injected
 workshop-access policy against verified server context before loading state or
 calling providers. It supplies fresh evidence, binds durable request intent and
-returns allowlisted historical views. Concrete teacher access rules, Firebase
-Callable wiring and deployment remain unimplemented.
+returns allowlisted historical views. The [Firebase Callable adapter](firebase-callable.md)
+implements trusted wiring and a current-account/teacher-role policy for the single
+pilot. Deployment, IAM, App Check client integration and production behavior remain unverified.
 
 A workshop has a marketing campaign with multiple marketing
 rounds, such as an initial announcement and a reminder. Correcting a publication
@@ -202,8 +203,8 @@ compares the current state with the approved source data.
 The implemented persistence-independent approval uses a canonical SHA-256
 fingerprint over the exact approval-bound content, facts, channel, source, link,
 and image selection. Campaign JSON restoration verifies these bindings; stored
-statuses do not establish fresh readiness. Production storage configuration and
-concrete teacher access rules remain future integration work.
+statuses do not establish fresh readiness. Production storage configuration and live teacher-access verification remain
+future integration work.
 
 Published posts that need changes are visibly flagged when the current data is
 checked. V1 does not promise scheduled background corrections. Teachers initiate
@@ -346,7 +347,7 @@ and repeated payment notifications.
 
 - All write operations check the user and existing workshop permissions on the
   server. Teachers do not need additional administrator approval for workshops
-  they may manage; the exact existing access rules still need to be checked.
+  they may manage; the pilot Callable policy is documented in the [adapter boundary](firebase-callable.md).
 - Generation and approval/publishing are separate actions. An approval status
   sent by the browser is not proof of authorization.
 - Production keys, OAuth tokens, and Firebase credentials remain on the server.
@@ -370,7 +371,7 @@ access, tracking, and production Firebase integration.
 
 | Topic | Next step | Required before |
 | --- | --- | --- |
-| Python runtime | Python 3.13 remains preferred for development; metadata uses `>=3.11`. Python 3.11 and 3.13 pass the [isolated package checks](python-runtime-compatibility.md). Firebase documents `python311`; this is not deployment verification | Verify Callable wiring, target platform and production runtime during Firebase integration |
+| Python runtime | Python 3.13 remains preferred for development; metadata uses `>=3.11`. Python 3.11 and 3.13 pass the [isolated package checks](python-runtime-compatibility.md). Firebase documents `python311`; this is not deployment verification | Callable wiring is locally checked; verify deployment, target platform and production runtime |
 | Workshop data model | The [provisional input contract](workshop-data-contract.md#provisional-validation-contract) is implemented and tested offline. Obtain sanitized source evidence and verify identity/version, public-copy selection, pricing, exceptions and aggregates; the [Mal-Yoga pilot](workshop-data-contract.md#mal-yoga-pilot-input-proposal) remains incomplete | Accepting a real pilot snapshot or claiming source compatibility |
 | Concrete data mapping | Check field names, versioning, stored date/price types, route-specific registration/payment event and timestamp, quota units/counts, permissions, and image paths; apply the confirmed studio defaults and full-day deadline rule | Implementing the respective Firebase integration |
 | Execution | Proposal: short, separate server-side actions per channel; measure runtime and define behavior when a request is canceled or the app is closed | Integrating generation into the teacher app and promising background execution |

@@ -6,7 +6,7 @@ official `google-cloud-firestore` client. This adapter adds storage only. It doe
 not create clients, discover credentials, select a project/database, authenticate
 users, generate drafts or publish content. Importing it performs no network calls.
 
-A later authenticated server adapter must verify teacher access, choose an
+The authenticated server adapter must verify teacher access, choose an
 allowlisted project/database/collection, create the client explicitly, and pass it
 into `FirestoreCampaignRepository(client, collection_name="pilotCampaigns")`.
 The collection is a single root collection with an intentionally narrow name:
@@ -14,8 +14,8 @@ The collection is a single root collection with an intentionally narrow name:
 Paths, reserved names and implicit/default collection selection are rejected.
 Actor references and stored approvals never authorize access or publication.
 The [teacher service facade](pilot-teacher-service.md) now enforces this ordering
-through injected verified context and an access checker. Concrete Firebase Auth
-wiring and existing teacher access rules still require separate integration.
+through injected verified context and an access checker. The [Callable adapter](firebase-callable.md) supplies Firebase Auth wiring and a
+fail-closed pilot teacher policy; live access and storage configuration remain unverified.
 
 ## Document contract
 
