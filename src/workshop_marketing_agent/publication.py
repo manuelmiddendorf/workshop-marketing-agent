@@ -15,6 +15,8 @@ from .submission import GoogleSubmissionPayload, prepare_google_submission, prep
 
 Digest = Annotated[str, Field(pattern=r"^[0-9a-f]{64}$")]
 ExternalPostId = Annotated[str, Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._~/-]{0,511}$")]
+GooglePostName = Annotated[str, Field(max_length=512, pattern=
+    r"^accounts/[A-Za-z0-9_-]+/locations/[A-Za-z0-9_-]+/localPosts/[A-Za-z0-9_-]+$")]
 PublicationStatus = Literal["in_progress", "submitted", "published", "failed", "outcome_unknown"]
 SafeError = Literal["permission_denied", "invalid_submission", "provider_rejected", "provider_unavailable"]
 
@@ -54,13 +56,17 @@ class PublicationEvent(BaseModel):
     def valid_event(self):
         _aware_utc(self.recorded_at, field="publication event time")
         if ((self.status == "failed") != (self.error_category is not None)
-                or (self.status != "published" and (self.external_post_id is not None or self.public_url is not None))
+                or (self.status != "published" and self.public_url is not None)
+                or (self.external_post_id is not None and self.status != "published"
+                    and not (self.source == "automatic" and self.status == "outcome_unknown"))
                 or (self.source == "reservation") != (self.status == "in_progress")
                 or (self.source == "automatic" and self.status not in ("published", "failed", "outcome_unknown"))
                 or (self.source == "automatic" and self.status == "published" and self.external_post_id is None)
                 or (self.source == "manual" and (self.status not in ("submitted", "published")
                                                  or self.external_post_id is not None))):
             raise ValueError("Invalid publication event fields")
+        if self.status == "outcome_unknown" and self.external_post_id is not None:
+            TypeAdapter(GooglePostName).validate_python(self.external_post_id)
         return self
 
 

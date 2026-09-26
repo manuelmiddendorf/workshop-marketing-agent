@@ -1,6 +1,7 @@
 # Google Business Local Posts transport
 
-This synchronous adapter is offline-tested transport only. It does not call campaign
+This synchronous adapter is offline-tested transport only. The separate
+[publication service](google-publication-service.md) now orchestrates its calls. It does not call campaign
 commands, record publication results, authorize a teacher, or run through Firebase.
 The caller must enforce exact-version approval and reserve a publication attempt
 before a future integration dispatches anything. A returned state is provider-reported
@@ -114,9 +115,9 @@ on Local Posts methods. No live Google request was made for this implementation.
 Offline tests do not verify API access, account eligibility, location identity,
 provider payload acceptance, image reachability, or production publication.
 
-Orchestration with durable [publication reservations](pilot-campaign-state.md#publication-target-and-immutable-binding),
-Firebase secrets, reconciliation, Callable actions, UI and deployment remain later
-work. No OAuth storage/refresh, discovery, retries, deletion or insights are added.
+Orchestration with durable [publication reservations](pilot-campaign-state.md#publication-target-and-immutable-binding)
+is implemented in the separate service. Firebase secrets, reconciliation, Callable
+configuration, UI and deployment remain later work. No OAuth storage/refresh, discovery, retries, deletion or insights are added.
 
 ## Offline verification
 

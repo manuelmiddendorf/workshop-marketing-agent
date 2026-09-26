@@ -13,8 +13,9 @@
   now supplies a fail-closed pilot teacher policy and trusted server wiring outside
   the business package. Durable publication reservations and append-only result
   evidence are implemented without provider calls or new Callable actions. A separate
-  offline-tested Google Local Posts transport is implemented but not wired to campaigns
-  or Firebase; live Google access remains unverified. Production storage,
+  offline-tested Google Local Posts transport and a framework-independent publication
+  service now connect durable reservations, one provider call and recorded results.
+  Firebase Google configuration and live access remain unverified. Production storage,
   IAM, App Check integration and deployment remain unverified. Publishing and
   teacher-app integration remain planned; implement them only through subsequent tasks.
 - Before making changes, read the relevant sections of

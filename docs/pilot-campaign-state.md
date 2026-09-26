@@ -177,7 +177,9 @@ Known failures require one of `permission_denied`, `invalid_submission`,
 `provider_rejected` or `provider_unavailable`. These categories mean a *known*
 negative result; a timeout, lost connection or crash that could follow a send
 must be recorded as `outcome_unknown`, never guessed to have failed. Unknown
-results have no terminal-failure shortcut. An unresolved `in_progress` record
+results have no terminal-failure shortcut. Automatic unknown results may retain an
+optional validated Google post name internally for future reconciliation; this does
+not mark publication or unblock another attempt, and updates must match their target. An unresolved `in_progress` record
 after a crash also blocks recreation; elapsed time is not permission to retry.
 
 Result recording remains possible after a channel is disabled or a different
@@ -193,9 +195,10 @@ conflicts. An operation ID is single-use; even a new command with that ID must
 instead replay the original command or use a new identity after a known failure.
 
 `RecordPublicationResult` is a trusted application command, not teacher input.
-Reservation/manual-confirmation commands will need authorization at a later
-service boundary. **No new Callable actions** are exposed here. Google OAuth,
-provider calls, reconciliation, teacher UI and deployment remain later work.
+The [publication service](google-publication-service.md) now authorizes Google
+reservation and result orchestration. Manual confirmation service actions remain
+later work. Firebase Google configuration, OAuth, reconciliation, UI and deployment
+remain unverified or unimplemented.
 
 ## Publication restoration and views
 

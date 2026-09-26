@@ -22,6 +22,7 @@ from .feed import FeedResponse, load_public_workshop
 from .firestore_repository import CampaignStorageError, CommitOutcomeUnknown
 from .generation import DraftClient, generate_pilot_drafts
 from .revision import ChannelId, _aware_utc, _fingerprint_payload
+from .service_publication import GooglePublisher, publish_google, publication_replay
 from .service_views import campaign_view, diagnostic_views, result_view
 
 
@@ -116,6 +117,13 @@ class PrepareSubmission(VersionMutation):
     approval_reference: Reference
 
 
+class PublishGoogle(Mutation):
+    action: Literal["publish_google"]
+    version_reference: Reference
+    approval_reference: Reference
+    submission_reference: Reference
+
+
 class SetChannelEnabled(ChannelMutation):
     action: Literal["set_channel_enabled"]
     enabled: bool
@@ -123,7 +131,7 @@ class SetChannelEnabled(ChannelMutation):
 
 TeacherRequest = Annotated[
     GetCampaign | CreateCampaign | StartRound | GenerateDrafts | DirectRevision | AIRevision
-    | BindLink | SelectVersion | ApproveVersion | PrepareSubmission | SetChannelEnabled,
+    | BindLink | SelectVersion | ApproveVersion | PrepareSubmission | SetChannelEnabled | PublishGoogle,
     Field(discriminator="action"),
 ]
 REQUEST_ADAPTER = TypeAdapter(TeacherRequest)
@@ -143,6 +151,7 @@ class ServiceDependencies:
     feed_timeout: float
     workshops: frozenset[str]
     channels: frozenset[ChannelId]
+    google: GooglePublisher | None = None
 
     def __post_init__(self):
         for timeout in (self.model_timeout, self.feed_timeout):
@@ -216,6 +225,9 @@ class PilotService:
                               or ((request.channel,) if isinstance(request, ChannelMutation) else ()))
         if any(channel not in self.dependencies.channels for channel in requested_channels):
             return _response("invalid_request")
+        if isinstance(request, PublishGoogle) and (request.workshop_reference != "malws-copy"
+                or "google_business" not in self.dependencies.channels):
+            return _response("forbidden")
         try:
             return self._authorized(request, principal)
         except CommitOutcomeUnknown:
@@ -253,6 +265,8 @@ class PilotService:
                     or any(r.service_request != binding for r in prior)):
                 return _response("request_conflict")
             if prior:
+                if isinstance(request, PublishGoogle):
+                    return publication_replay(state, prior)
                 complete = not isinstance(request, GenerateDrafts) or len(prior) == len(request.channels)
                 return _response("replayed" if complete else "partial_completion", historical=True,
                     automatic_resume=False, results=[result_view(r.result) for r in prior],
@@ -276,6 +290,8 @@ class PilotService:
             return _response("revision_conflict", refresh_required=True, revision=state.revision)
         if isinstance(request, GenerateDrafts):
             return self._generate(request, state, binding)
+        if isinstance(request, PublishGoogle):
+            return publish_google(self, request, state, binding)
         evidence = None
         now = self._now()
         if isinstance(request, (DirectRevision, AIRevision, BindLink, ApproveVersion, PrepareSubmission)):
