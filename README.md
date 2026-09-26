@@ -52,7 +52,9 @@ Pydantic, the official OpenAI Python SDK and `google-cloud-firestore` are runtim
 the package, validating supplied data, and running routine draft tests need no
 credentials, application configuration or network calls. Initial setup may need
 network access to download Python, dependencies and build tools. Firebase
-Callable/Admin libraries remain deferred.
+Callable/Admin libraries are isolated in the `firebase` dependency group, included
+by `dev` for offline adapter tests. The [Callable adapter](docs/firebase-callable.md)
+provides Python 3.11 staging instructions; deployment and production access remain unverified.
 
 Run the offline behavior tests with:
 

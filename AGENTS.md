@@ -9,10 +9,11 @@
   preparation are also implemented. Serializable pilot campaign state, application
   commands, an in-memory repository, and an injected-client Firestore storage adapter
   are implemented, along with a framework-independent teacher service that requires
-  verified server context and an injected access policy. Production storage
-  configuration and concrete teacher access rules are unverified. Publishing,
-  Firebase Callable and teacher-app integration remain planned; implement them only
-  through subsequent tasks.
+  verified server context and an injected access policy. A Firebase Callable adapter
+  now supplies a fail-closed pilot teacher policy and trusted server wiring outside
+  the business package. Production storage,
+  IAM, App Check integration and deployment remain unverified. Publishing and
+  teacher-app integration remain planned; implement them only through subsequent tasks.
 - Before making changes, read the relevant sections of
   [docs/architecture.md](docs/architecture.md) and [docs/v1-scope.md](docs/v1-scope.md).
   They distinguish confirmed decisions, technical proposals, and open questions.
