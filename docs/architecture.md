@@ -159,8 +159,8 @@ The [pilot campaign application service](pilot-campaign-state.md) implements ser
 rounds, immutable histories, exact approvals and prepared packages, command receipts,
 and an atomic compare-and-save boundary. The [Firestore storage adapter](firestore-campaign-storage.md)
 implements the production repository contract with an injected client. Production
-configuration and indexes remain unverified; production access-policy verification and publication records
-remain planned.
+configuration and indexes remain unverified. Durable publication reservations and
+append-only recorded result history are implemented; provider operations remain planned.
 
 The [teacher service facade](pilot-teacher-service.md) now checks an injected
 workshop-access policy against verified server context before loading state or
@@ -187,13 +187,21 @@ Draft state and publication state are stored separately. A possible small set
 of states is:
 
 - Draft: generating, review required, approved, outdated, or error.
-- Publication: not started, in progress, submitted, published, failed, or outcome unknown.
+- Publication: no attempt, `in_progress`, `submitted`, `published`, `failed`, or `outcome_unknown`.
 - Additional flags: channel disabled and change required, where applicable.
 
 "Ready to copy" is a display state derived from a valid draft and manual mode.
 For editorial platforms, "submitted" does not yet mean "published". An existing
 published post remains recorded even while a new version awaits review or its
 update has failed.
+
+The [publication command rules](pilot-campaign-state.md#publication-target-and-immutable-binding)
+bind the exact approved/prepared version and payload to one campaign-wide target
+per channel across rounds. A known post selects update; missing update identity,
+in-progress, submitted and unknown outcomes block another reservation. Events
+record trusted Google results or separate Rausgegangen teacher confirmations;
+they are recorded evidence, not independently verified provider state. No new
+Callable action or provider request is implemented.
 
 Approvals apply to a specific version. Changes to its text, image, or link
 invalidate approval. Changes to relevant workshop facts and expired price
@@ -302,9 +310,11 @@ retried a limited number of times with delays. Permanent errors need a visible
 correction. An automatically repaired draft does not receive automatic approval.
 The exact retry count will be defined later.
 
-Before sending, a stable operation identifier is reserved persistently.
+Before a future send, a stable operation identifier must be reserved persistently.
+The implemented application commits the reservation and receipt atomically before
+any provider operation may start; it does not send or retry anything itself.
 Concurrent clicks must not start the same publishing action more than once.
-Provider-native idempotency is used where available. External post IDs are stored
+Provider-native idempotency remains future integration work. External post IDs are stored
 for updates. A new version does not automatically authorize recreating an already
 published post.
 

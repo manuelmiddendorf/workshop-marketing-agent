@@ -11,7 +11,8 @@
   are implemented, along with a framework-independent teacher service that requires
   verified server context and an injected access policy. A Firebase Callable adapter
   now supplies a fail-closed pilot teacher policy and trusted server wiring outside
-  the business package. Production storage,
+  the business package. Durable publication reservations and append-only result
+  evidence are implemented without provider calls or new Callable actions. Production storage,
   IAM, App Check integration and deployment remain unverified. Publishing and
   teacher-app integration remain planned; implement them only through subsequent tasks.
 - Before making changes, read the relevant sections of

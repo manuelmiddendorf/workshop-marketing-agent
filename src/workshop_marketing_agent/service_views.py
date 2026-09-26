@@ -2,6 +2,7 @@
 
 from .campaign_state import CampaignState, CommandResult
 from .generation import GoogleBusinessDraft
+from .publication import all_attempts, target_state
 
 
 _DIAGNOSTICS = {
@@ -78,6 +79,20 @@ def campaign_view(state: CampaignState, allowed_channels) -> dict:
                                   "approval_reference": p.approval_reference, "status": "recorded"}
                                  for p in channel.submissions],
                 "diagnostics": diagnostic_views(channel.diagnostics), "current_readiness": "not_checked"})
+            if channel.publications:
+                channels[-1]["publications"] = publication_views(state, channel)
         rounds.append({"reference": round_.reference, "purpose": round_.purpose, "channels": channels})
     return {"campaign_reference": state.campaign_reference, "workshop_reference": state.workshop_reference,
             "revision": state.revision, "rounds": rounds, "current_readiness": "not_checked"}
+
+
+def publication_views(state, channel) -> list[dict]:
+    """Historical recorded evidence, excluding actors, operation IDs and provider identities."""
+    blocked, _ = target_state(all_attempts(state, channel.channel))
+    return [{"channel": channel.channel, "operation": attempt.operation,
+        "status": attempt.status, "attempt_reference": attempt.reference,
+        "version_reference": attempt.version_reference, "initiated_at": attempt.initiated_at.isoformat(),
+        "another_attempt_blocked": blocked or not channel.enabled,
+        "events": [{"status": event.status, "recorded_at": event.recorded_at.isoformat(),
+                    "public_url": event.public_url, "error_category": event.error_category}
+                   for event in attempt.events]} for attempt in channel.publications]

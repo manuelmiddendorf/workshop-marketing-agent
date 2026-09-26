@@ -22,6 +22,10 @@ from .revision import (
     approve_draft_version, bind_campaign_link, revise_draft_directly, revise_draft_with_ai,
 )
 from .submission import prepare_google_submission, prepare_rausgegangen_submission
+from .publication import (
+    Digest, ExternalPostId, PublicURL, SafeError, PublicationEvent,
+    PUBLICATION_KINDS, apply_publication,
+)
 
 
 class Command(FrozenState):
@@ -100,9 +104,49 @@ class SetChannelEnabled(ChannelCommand):
     enabled: bool
 
 
+class ReservePublication(VersionCommand):
+    kind: Literal["reserve_publication"] = "reserve_publication"
+    operation_id: Reference
+    approval_reference: Reference
+    submission_reference: Reference
+    version_fingerprint: Digest
+    approval_fingerprint: Digest
+    submission_fingerprint: Digest
+    payload_fingerprint: Digest
+
+
+class RecordPublicationResult(ChannelCommand):
+    """Trusted provider evidence only; never expose this command as teacher intent."""
+    kind: Literal["record_publication_result"] = "record_publication_result"
+    attempt_reference: Reference
+    status: Literal["published", "failed", "outcome_unknown"]
+    external_post_id: ExternalPostId | None = None
+    public_url: PublicURL | None = None
+    error_category: SafeError | None = None
+
+    @model_validator(mode="after")
+    def safe_result(self):
+        PublicationEvent(reference=self.command_id, status=self.status, source="automatic",
+            recorded_by=self.actor_reference, recorded_at=self.now, external_post_id=self.external_post_id,
+            public_url=self.public_url, error_category=self.error_category)
+        return self
+
+
+class ConfirmSubmission(ChannelCommand):
+    kind: Literal["confirm_submission"] = "confirm_submission"
+    attempt_reference: Reference
+
+
+class ConfirmPublication(ChannelCommand):
+    kind: Literal["confirm_publication"] = "confirm_publication"
+    attempt_reference: Reference
+    public_url: PublicURL | None = None
+
+
 PilotCommand = Annotated[
     StartRound | AttachDraft | DirectRevision | AIRevision | BindLink | SelectVersion
-    | ApproveVersion | PrepareSubmission | SetChannelEnabled,
+    | ApproveVersion | PrepareSubmission | SetChannelEnabled | ReservePublication
+    | RecordPublicationResult | ConfirmSubmission | ConfirmPublication,
     Field(discriminator="kind"),
 ]
 COMMAND_ADAPTER = TypeAdapter(PilotCommand)
@@ -164,6 +208,9 @@ def execute_command(repository: CampaignRepository, command: PilotCommand, *,
         return CommandOutcome(status="rejected", message="Command belongs to another workshop")
     if command.now < state.updated_at:
         return CommandOutcome(status="rejected", message="Command time predates current state")
+    if isinstance(command, ReservePublication) and any(
+            a.operation_id == command.operation_id for r in state.rounds for c in r.channels for a in c.publications):
+        return CommandOutcome(status="conflict", message="Operation ID was already reserved; replay the original command")
     try:
         rounds, result = _apply(state, command, evidence, client)
     except ValueError as error:
@@ -199,7 +246,11 @@ def _apply(state: CampaignState, command: PilotCommand, evidence: FeedImportResu
     if round_ is None:
         raise ValueError("Round does not exist")
     channel = next(c for c in round_.channels if c.channel == command.channel)
-    if isinstance(command, SetChannelEnabled):
+    if command.kind in PUBLICATION_KINDS:
+        # Results may arrive after disabling/editing a channel. They record the reserved
+        # operation's evidence and must not be discarded because draft state changed.
+        channel, result = apply_publication(state, channel, command, evidence, result_fields)
+    elif isinstance(command, SetChannelEnabled):
         channel = channel.model_copy(update={"enabled": command.enabled, "last_status": "review_required",
                                              "diagnostics": (), "updated_at": command.now})
         result = CommandResult(**result_fields, status="enabled" if command.enabled else "disabled")
