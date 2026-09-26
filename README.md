@@ -4,9 +4,10 @@ A Python project for AI-assisted workshop marketing, with human approval,
 channel adapters, and evaluation.
 
 **Status:** The package includes provisional workshop input models, deterministic
-offline validation and a read-only public pilot feed importer. Generation,
-publishing and teacher-app integration remain planned. Firestore document
-compatibility has not been verified.
+offline validation, a read-only public pilot feed importer, and review-only pilot
+draft generation for Google Business Profile and Rausgegangen. Publishing and
+teacher-app integration remain planned. Firestore document compatibility has not
+been verified.
 
 ## Local setup
 
@@ -44,10 +45,11 @@ export UV_PROJECT_ENVIRONMENT="$(mktemp -d)/venv"
 Keep that setting for the verification session, then run
 `unset UV_PROJECT_ENVIRONMENT` to return to the default project environment.
 
-Pydantic is the runtime dependency. Importing the package and validating supplied
-data need no credentials, application configuration or network calls. Initial setup may need
-network access to download Python, dependencies and build tools. The OpenAI SDK
-and Firebase libraries remain deferred.
+Pydantic and the official OpenAI Python SDK are runtime dependencies. Importing
+the package, validating supplied data, and running routine draft tests need no
+credentials, application configuration or network calls. Initial setup may need
+network access to download Python, dependencies and build tools. Firebase
+libraries remain deferred.
 
 Run the offline behavior tests with:
 
@@ -86,6 +88,11 @@ To fetch the configured public pilot, see the
 [feed import example and limitations](docs/public-workshop-feed.md). HTTP handling
 is separate from these offline rules; importing is neither publishing approval
 nor booking verification.
+
+To generate the two review-only pilot drafts, see the
+[generation boundary, usage and limitations](docs/pilot-draft-generation.md).
+Routine tests inject stored responses. A deliberate live command requires an
+explicit model and `OPENAI_API_KEY`; it creates no external post.
 
 ## Build and verify a wheel
 
@@ -127,6 +134,8 @@ Other Python versions and target deployment runtimes remain unverified.
 
 - [Architecture proposal](docs/architecture.md)
 - [V1 scope and acceptance criteria](docs/v1-scope.md)
+- [Pilot draft generation](docs/pilot-draft-generation.md)
+- [Prompt comparison](evaluations/prompt-comparison.md)
 - [Project working guidelines](AGENTS.md)
 
 Project documentation, code comments, issues, and pull requests use English.

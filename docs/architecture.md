@@ -1,13 +1,14 @@
 # Architecture: workshop-marketing-agent
 
-As of September 24, 2026. Status: **Draft for joint review; package and provisional input validation implemented**.
+As of September 26, 2026. Status: **Draft for joint review; package, provisional input validation, public pilot import, and review-only pilot generation implemented**.
 
 Confirmed product decisions are documented in [v1-scope.md](v1-scope.md).
 The installable Python package uses Python 3.13 and Hatchling. Provisional
 workshop input models and deterministic offline validation use Pydantic. The
 remaining technical design is a proposal for later implementation. Open questions
-are explicitly marked. A read-only public pilot feed importer is implemented;
-generation and integration with the teacher app remain unimplemented.
+are explicitly marked. A read-only public pilot feed importer and one bounded
+Google Business/Rausgegangen draft path are implemented; publishing and
+integration with the teacher app remain unimplemented.
 
 ## 1. Purpose and architectural principles
 
@@ -127,8 +128,10 @@ A prompt is assembled from small, versioned components:
 5. For revisions: the current draft and the revision request.
 6. A schema for the allowed output fields.
 
-The planned tools are the official OpenAI Python SDK, Pydantic, and Structured
-Outputs. The [official documentation](https://developers.openai.com/api/docs/guides/structured-outputs)
+The implemented pilot path uses the official OpenAI Python SDK, Pydantic, and
+Structured Outputs. Its [usage and limitations](pilot-draft-generation.md) keep
+generated wording separate from deterministic channel facts. The
+[official documentation](https://developers.openai.com/api/docs/guides/structured-outputs)
 describes Pydantic-based schemas. Passing schema validation does not replace
 content review; refusals, incomplete responses, and validation errors are handled
 separately.

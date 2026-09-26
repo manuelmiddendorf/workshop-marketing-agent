@@ -9,6 +9,7 @@ description = "A Python package foundation for AI-assisted workshop marketing."
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "openai>=2,<3",
     "pydantic>=2.12,<3",
 ]
 

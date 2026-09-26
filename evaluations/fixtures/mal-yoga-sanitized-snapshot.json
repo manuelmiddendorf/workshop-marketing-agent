@@ -1,0 +1,41 @@
+{
+  "fixture_kind": "sanitized_documented_pilot_observation",
+  "not_a_live_fixture": true,
+  "source": {
+    "feed_identity": "malws-copy",
+    "schema_version": "workshop-data.v1",
+    "source_version": "firestore-update-time:1789375456:294515000",
+    "observed_at": "2026-09-25T18:21:07.160Z",
+    "sanitized_for_evaluation_at": "2026-09-26"
+  },
+  "facts": {
+    "title": "Mal-Yoga-Workshop",
+    "local_date": "2026-10-18",
+    "start_time": "11:00",
+    "end_time": "17:30",
+    "time_zone": "Europe/Berlin",
+    "location": "Middendorf Yoga, Am Spreebord 9d, 10589 Berlin",
+    "regular_price": "130.00",
+    "currency": "EUR",
+    "pricing_unit": "person",
+    "booking_url": "https://www.middendorf-yoga.de/workshops/mal-yoga-workshop-2026-10-18/"
+  },
+  "original_public_description_excerpt": "Mal-Yoga-Workshop – Kreativität, Flow & Herzensausdruck",
+  "time_sensitive_observation": {
+    "observed_at": "2026-09-25T18:21:05.682Z",
+    "remaining_persons": 5,
+    "freshness_policy_seconds": 60,
+    "warning": "Historical observation only; re-import and revalidate before generation."
+  },
+  "expired_offer": {
+    "price": "119.00",
+    "final_date": "2026-09-18",
+    "must_not_be_presented_as_current": true
+  },
+  "image_limitations": {
+    "marketing_permission": null,
+    "attribution_required": null,
+    "reference_conflict": "Conflicting nonempty source aliases"
+  },
+  "privacy": "Contains no credentials or participant data."
+}
