@@ -15,7 +15,8 @@
   evidence are implemented without provider calls or new Callable actions. A separate
   offline-tested Google Local Posts transport and a framework-independent publication
   service now connect durable reservations, one provider call and recorded results.
-  Firebase Google configuration and live access remain unverified. Production storage,
+  Firebase Google OAuth wiring is offline-tested with lazy secret access and one
+  refresh request; actual credentials/location configuration and live access remain unverified. Production storage,
   IAM, App Check integration and deployment remain unverified. Publishing and
   teacher-app integration remain planned; implement them only through subsequent tasks.
 - Before making changes, read the relevant sections of

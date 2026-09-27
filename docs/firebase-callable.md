@@ -80,6 +80,9 @@ Callable-only identity source, consistent normalization, strict present-UID
 matching, rejection of any tenant claim, and agreement between UID/email Auth
 lookups. It neither changes those applications nor repeats the booking audit.
 
+The [Google OAuth wiring](google-oauth-wiring.md) now supplies the publication adapter
+with a lazy server-side refresh grant. Real credentials and production access remain unverified.
+
 ## Explicit configuration and initialization
 
 | Setting | Value or source |
@@ -91,6 +94,8 @@ lookups. It neither changes those applications nor repeats the booking audit.
 | Campaign collection | `pilotMarketingCampaigns` (no production contents/configuration verified) |
 | Role collection | `Users` |
 | Feed / model timeout | 10 / 60 seconds |
+| Token refresh / Local Posts timeout | 10 / 15 seconds |
+| Google secret / location | `PILOT_GOOGLE_OAUTH` / `PILOT_GOOGLE_LOCATION` (empty disables publication) |
 | Admin HTTP / role-read timeout | 10 / 10 seconds |
 | Workshops | `malws-copy` only |
 | Channels | `google_business`, `rausgegangen` only |
@@ -194,7 +199,7 @@ PY
 ```
 
 The generated tree contains `firebase.json`, `functions/main.py`,
-`functions/pilot_adapter.py`, `functions/requirements.txt` and
+`functions/pilot_adapter.py`, `functions/google_oauth.py`, `functions/requirements.txt` and
 `functions/vendor/workshop_marketing_agent-0.1.0-py3-none-any.whl`. The staging
 command requires Python 3.11 and an empty output directory, builds through
 Hatchling, exports locked dependencies with hashes, and adds the wheel's hash.

@@ -298,7 +298,7 @@ endpoint = spec["endpoints"]["pilot_teacher_service"]
 assert endpoint["platform"] == "gcfv2"
 assert endpoint["region"] == ["europe-west1"]
 assert endpoint["timeoutSeconds"] == 300
-assert endpoint["secretEnvironmentVariables"] == [{"key": "PILOT_OPENAI_API_KEY"}]
+assert endpoint["secretEnvironmentVariables"] == [{"key": "PILOT_OPENAI_API_KEY"}, {"key": "PILOT_GOOGLE_OAUTH"}]
 import pilot_adapter
 assert pilot_adapter.initialize_admin() is pilot_adapter.initialize_admin()
 print("Import, discovery, manifest and repeat initialization passed")

@@ -244,8 +244,8 @@ actions are currently available.
 
 The [Google Local Posts transport](google-local-posts.md) now supports offline-tested
 create, update and get operations with injected credentials and HTTP. The [publication service](google-publication-service.md) connects it to durable
-reservation/result commands with one possible dispatch. Firebase Google configuration
-and live access remain unverified.
+reservation/result commands with one possible dispatch. The [Firebase OAuth wiring](google-oauth-wiring.md) injects a lazy refresh-token
+provider; actual credentials/location configuration and live access remain unverified.
 
 Google is the planned first external automatic channel. Rausgegangen and HIMBEER
 start with assisted manual listings. A manual fallback may be offered without
