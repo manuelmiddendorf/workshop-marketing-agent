@@ -4,7 +4,9 @@ Preparation is a pure, local operation. It returns a checked Google payload or
 Rausgegangen copy package, never a publication record, external ID, authorization,
 or submission-success status. Callers supply a newly imported workshop and an
 explicit timezone-aware current time. No provider, feed, or model request is made
-by preparation.
+by preparation. The [Rausgegangen teacher workflow](rausgegangen-teacher-workflow.md)
+now reserves an exact stored package before returning active copy and records
+submission/publication as separate teacher confirmations.
 
 ## Campaign links before approval
 

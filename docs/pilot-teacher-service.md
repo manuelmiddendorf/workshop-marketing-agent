@@ -85,6 +85,9 @@ require `channel`; version actions additionally require `version_reference`.
 | `prepare_submission` | Exact selected version and `approval_reference` | Yes |
 | `publish_google` | Exact version, `approval_reference`, `submission_reference`; channel is server-derived | Yes |
 | `reconcile_google_publication` | Exact `attempt_reference`; channel/resource are server-derived | No; historical provider GET only |
+| `begin_rausgegangen_submission` | Exact version, approval and submission references; channel server-derived | Yes; reserve before active copy |
+| `confirm_rausgegangen_submission` | Exact `attempt_reference`; channel server-derived | No; teacher-reported submission |
+| `confirm_rausgegangen_publication` | Exact `attempt_reference`, optional strict `public_url` | No; teacher-reported publication |
 | `set_channel_enabled` | Strict boolean `enabled` | No; enabling requires review |
 
 The initial image is the imported workshop image reference, including unknown
@@ -240,3 +243,7 @@ tests: **162 passed in 4.92 seconds**, with no remaining actionable findings.
 Lockfile consistency, Python compilation, `git diff --check`, 63 local
 documentation links and the documented JSON request schema check also passed.
 No emulator, production database or live model was contacted.
+
+The [assisted Rausgegangen workflow](rausgegangen-teacher-workflow.md) projects only
+exact stored copy after confirmed reservation, and separates submission from
+publication confirmation. It uses no Google boundary or portal automation.
