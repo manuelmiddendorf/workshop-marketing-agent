@@ -19,6 +19,32 @@ GooglePostName = Annotated[str, Field(max_length=512, pattern=
     r"^accounts/[A-Za-z0-9_-]+/locations/[A-Za-z0-9_-]+/localPosts/[A-Za-z0-9_-]+$")]
 PublicationStatus = Literal["in_progress", "submitted", "published", "failed", "outcome_unknown"]
 SafeError = Literal["permission_denied", "invalid_submission", "provider_rejected", "provider_unavailable"]
+ReconciliationReason = Literal["matched", "provider_rejected", "processing", "content_mismatch",
+    "content_unresolved", "public_url_unavailable", "read_unavailable", "resource_mismatch", "unknown_state"]
+
+
+class ReconciliationObservation(BaseModel):
+    """Safe comparison evidence only; the retrieved content is never persisted."""
+    model_config = ConfigDict(extra="forbid", strict=True, frozen=True)
+    reason: ReconciliationReason
+    provider_state: Literal["LIVE", "RECURRING", "PROCESSING", "SCHEDULED", "REJECTED"] | None
+    payload_matched: bool | None
+
+    @model_validator(mode="after")
+    def consistent(self):
+        if self.reason in ("matched", "content_mismatch", "content_unresolved", "public_url_unavailable"):
+            expected = {"matched": True, "content_mismatch": False,
+                        "content_unresolved": None, "public_url_unavailable": True}[self.reason]
+            valid = self.provider_state in ("LIVE", "RECURRING") and self.payload_matched is expected
+        else:
+            valid = self.payload_matched is None and (
+                (self.reason == "provider_rejected" and self.provider_state == "REJECTED")
+                or (self.reason == "processing" and self.provider_state in ("PROCESSING", "SCHEDULED"))
+                or (self.reason in ("read_unavailable", "resource_mismatch", "unknown_state")
+                    and self.provider_state is None))
+        if not valid:
+            raise ValueError("Inconsistent reconciliation evidence")
+        return self
 
 
 def _public_url(value):
@@ -47,14 +73,28 @@ class PublicationEvent(BaseModel):
     status: PublicationStatus
     recorded_by: Reference
     recorded_at: datetime
-    source: Literal["reservation", "automatic", "manual"]
+    source: Literal["reservation", "automatic", "manual", "reconciliation"]
     error_category: SafeError | None = None
     external_post_id: ExternalPostId | None = None
     public_url: PublicURL | None = None
+    reconciliation: ReconciliationObservation | None = Field(default=None, exclude_if=lambda value: value is None)
 
     @model_validator(mode="after")
     def valid_event(self):
         _aware_utc(self.recorded_at, field="publication event time")
+        if self.source == "reconciliation":
+            if self.reconciliation is None or self.external_post_id is None:
+                raise ValueError("Reconciliation requires safe evidence and a trusted resource")
+            TypeAdapter(GooglePostName).validate_python(self.external_post_id)
+            reason = self.reconciliation.reason
+            expected = "published" if reason == "matched" else "failed" if reason == "provider_rejected" else "outcome_unknown"
+            if (self.status != expected
+                    or self.error_category != ("provider_rejected" if expected == "failed" else None)
+                    or (self.public_url is not None) != (expected == "published")):
+                raise ValueError("Reconciliation status differs from its evidence")
+            return self
+        if self.reconciliation is not None:
+            raise ValueError("Unexpected reconciliation evidence")
         if ((self.status == "failed") != (self.error_category is not None)
                 or (self.status != "published" and self.public_url is not None)
                 or (self.external_post_id is not None and self.status != "published"
@@ -106,6 +146,9 @@ class PublicationAttempt(BaseModel):
             allowed = ((previous.status == "in_progress" and event.status in
                         ("submitted", "published", "failed", "outcome_unknown"))
                        or (previous.status == "submitted" and event.status == "published"))
+            if event.source == "reconciliation":
+                prefix = self.model_copy(update={"events": self.events[:len(references)]})
+                allowed = reconciliation_resource(prefix) == event.external_post_id and event.external_post_id is not None
             if (not allowed or event.recorded_at < previous.recorded_at or event.reference in references
                     or (event.source == "manual" and event.status == "published" and previous.status != "submitted")
                     or (event.source == "automatic" and previous.status != "in_progress")
@@ -115,6 +158,23 @@ class PublicationAttempt(BaseModel):
             references.add(event.reference)
             previous = event
         return self
+
+
+def reconciliation_resource(attempt):
+    """Only an unknown attempt's recorded resource or an in-progress update target."""
+    names = {e.external_post_id for e in attempt.events if e.external_post_id is not None}
+    if attempt.status == "in_progress" and attempt.operation == "update":
+        names.add(attempt.update_post_id)
+    elif attempt.status != "outcome_unknown" or not names:
+        return None
+    if attempt.operation == "update" and names != {attempt.update_post_id}:
+        return None
+    if len(names) != 1:
+        return None
+    try:
+        return TypeAdapter(GooglePostName).validate_python(next(iter(names)))
+    except (ValueError, TypeError):
+        return None
 
 
 def approval_fingerprint(approval):
@@ -188,14 +248,16 @@ def apply_publication(state, channel, command, evidence, result_fields):
         attempt = next((a for a in channel.publications if a.reference == command.attempt_reference), None)
         if attempt is None:
             raise ValueError("Publication attempt is not in this round and channel")
-        automatic = command.kind == "record_publication_result"
+        reconciliation = command.kind == "record_google_reconciliation"
+        automatic = command.kind == "record_publication_result" or reconciliation
         if automatic != (channel.channel == "google_business"):
             raise ValueError("Result source is not supported for this channel")
         status = command.status if automatic else ("submitted" if command.kind == "confirm_submission" else "published")
         event = PublicationEvent(reference=command.command_id, status=status, recorded_by=command.actor_reference,
-            recorded_at=command.now, source="automatic" if automatic else "manual",
+            recorded_at=command.now, source="reconciliation" if reconciliation else "automatic" if automatic else "manual",
             error_category=getattr(command, "error_category", None),
-            external_post_id=getattr(command, "external_post_id", None), public_url=getattr(command, "public_url", None))
+            external_post_id=getattr(command, "external_post_id", None), public_url=getattr(command, "public_url", None),
+            reconciliation=getattr(command, "reconciliation", None))
         # Revalidate before saving, including transitions out of terminal/unknown states.
         attempt = PublicationAttempt.model_validate_json(attempt.model_copy(update={"events": attempt.events + (event,)}).model_dump_json())
         publications = tuple(attempt if a.reference == attempt.reference else a for a in channel.publications)
@@ -232,7 +294,7 @@ def validate_publications(state):
                 for event in attempt.events:
                     if (event.reference in events or event.recorded_at > channel.updated_at
                             or (event.source == "manual" and channel.channel != "rausgegangen")
-                            or (event.source == "automatic" and channel.channel != "google_business")):
+                            or (event.source in ("automatic", "reconciliation") and channel.channel != "google_business")):
                         raise ValueError("Invalid publication event association")
                     events[event.reference] = (round_, channel, attempt, event)
     seen = {}
@@ -283,17 +345,21 @@ def validate_publications(state):
             old = seen.get(attempt.reference)
             if old is None or command["attempt_reference"] != attempt.reference:
                 raise ValueError("Result precedes reservation")
-            expected_source = "automatic" if kind == "record_publication_result" else "manual"
-            expected_status = command.get("status") if expected_source == "automatic" else (
+            expected_source = ("reconciliation" if kind == "record_google_reconciliation" else
+                               "automatic" if kind == "record_publication_result" else "manual")
+            expected_status = command.get("status") if expected_source != "manual" else (
                 "submitted" if kind == "confirm_submission" else "published")
             if (event.source != expected_source or event.status != expected_status
                     or event.public_url != command.get("public_url")
                     or event.external_post_id != command.get("external_post_id")
-                    or event.error_category != command.get("error_category")):
+                    or event.error_category != command.get("error_category")
+                    or (event.reconciliation.model_dump(mode="json") if event.reconciliation else None)
+                       != command.get("reconciliation")):
                 raise ValueError("Publication event differs from commanded result")
             seen[attempt.reference] = old.model_copy(update={"events": old.events + (event,)})
     if events or seen != attempts:
         raise ValueError("Publication history has missing or reordered receipts")
 
 
-PUBLICATION_KINDS = {"reserve_publication", "record_publication_result", "confirm_submission", "confirm_publication"}
+PUBLICATION_KINDS = {"reserve_publication", "record_publication_result", "confirm_submission", "confirm_publication",
+                     "record_google_reconciliation"}

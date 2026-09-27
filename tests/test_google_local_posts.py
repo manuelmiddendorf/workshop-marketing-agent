@@ -109,7 +109,7 @@ def test_states_and_allowlist(state, outcome, payload):
     assert result.outcome == outcome
     assert result.state == (state if outcome != "unresolved" else None)
     assert result.search_url == "https://www.google.com/search?q=post"
-    assert set(asdict(result)) == {"operation", "outcome", "resource_name", "state", "search_url"}
+    assert set(asdict(result)) == {"operation", "outcome", "resource_name", "state", "search_url", "observed_payload"}
     assert SECRET not in repr(result)
 
 

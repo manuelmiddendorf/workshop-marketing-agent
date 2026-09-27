@@ -34,7 +34,7 @@ Construct `ServiceDependencies` explicitly with:
   as the real pilot; tests use a separate synthetic workshop. Supported channels
   are `google_business` and `rausgegangen`.
 - `google`: optional injected `GooglePublisher` for [publication orchestration](google-publication-service.md).
-  Required only by `publish_google`; that action is restricted to `malws-copy`.
+  Used by `publish_google` and [explicit reconciliation](google-publication-reconciliation.md); both are restricted to `malws-copy`.
 
 `handle(request_data, principal=...)` requires a `VerifiedPrincipal` constructed
 by trusted server code. Its subject is the verified authentication identity, not
@@ -84,6 +84,7 @@ require `channel`; version actions additionally require `version_reference`.
 | `approve_version` | Exact selected version | Yes |
 | `prepare_submission` | Exact selected version and `approval_reference` | Yes |
 | `publish_google` | Exact version, `approval_reference`, `submission_reference`; channel is server-derived | Yes |
+| `reconcile_google_publication` | Exact `attempt_reference`; channel/resource are server-derived | No; historical provider GET only |
 | `set_channel_enabled` | Strict boolean `enabled` | No; enabling requires review |
 
 The initial image is the imported workshop image reference, including unknown

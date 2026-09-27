@@ -23,6 +23,8 @@ class GooglePublisher(Protocol):
 
     def update_event(self, post_name: str, payload: GoogleSubmissionPayload) -> PostResult: ...
 
+    def get_post(self, post_name: str) -> PostResult: ...
+
 
 _MESSAGES = {
     "published": "Veröffentlichung von Google bestätigt und gespeichert.",

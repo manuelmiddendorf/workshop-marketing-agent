@@ -112,7 +112,9 @@ Owner checklist — **not executed**:
 - [ ] **Unverified:** Deploy only after explicit authorization.
 - [ ] **Unverified:** Complete a separate controlled preflight before the first real publication.
 
-Reconciliation, teacher UI, deployment, App Check verification and live pilot verification
+Explicit [reconciliation](google-publication-reconciliation.md) now reuses this lazy OAuth
+boundary for authorized eligible historical reads. Manual resolution of remaining
+unknown outcomes, teacher UI, deployment, App Check verification and live pilot verification
 remain separate work. Offline tests prove neither API access nor successful production
 publication. The staging script includes `google_oauth.py`; it still only builds local
 artifacts and never creates secrets or deploys.

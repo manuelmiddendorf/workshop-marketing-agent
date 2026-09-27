@@ -82,7 +82,7 @@ unknown outcomes. Update results must retain the exact reserved provider identit
 There is no fallback from update to create and no automatic retry or `get_post` call.
 
 Automatic unknown events may now retain an optional syntactically validated Google
-post name for future reconciliation. Manual/failed/reservation events cannot gain
+post name for explicit reconciliation. Manual/failed/reservation events cannot gain
 that field, and unknown events cannot gain a public URL. Existing update-target
 consistency checks still apply. No fields or schema versions were added: legacy
 snapshots and canonical serialization remain unchanged. Teacher views never expose
@@ -114,7 +114,7 @@ manual investigation as a crash after dispatch. There is no external exactly-onc
 guarantee and elapsed time does not permit retrying an unknown outcome.
 
 OAuth/Callable wiring is implemented with offline checks. Remaining work: API approval,
-actual Firebase secret/location configuration, reconciliation, teacher UI, deployment
+actual Firebase secret/location configuration, manual resolution of remaining unknowns, teacher UI, deployment
 and live verification. Offline tests establish
 neither production Google access nor successful external publication. No live Google
 or Firebase requests, credentials, automatic reconciliation or deployment were used.
@@ -167,3 +167,7 @@ Final results on 2026-09-27, after review corrections and the scope regression t
 These include 66 new orchestration cases and the existing legacy canonical snapshot
 checks. The documented JSON request validates against `REQUEST_ADAPTER`; local
 Markdown targets and `git diff --check` pass. No live publication is claimed.
+
+The separate [reconciliation action](google-publication-reconciliation.md) now performs
+one explicit GET for eligible known resources and confirms only the exact reserved
+payload. Publication replay itself still never resumes or reconciles automatically.
