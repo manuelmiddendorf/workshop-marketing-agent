@@ -57,6 +57,7 @@ Channel commands also name the channel.
 | `SetChannelEnabled` | Explicit boolean; preserve all history |
 | `ReservePublication` | Exact current version, approval and preparation references/fingerprints, final payload fingerprint and a new stable operation ID; recheck readiness and atomically reserve the target |
 | `RecordPublicationResult` | Trusted server-only Google result for a reserved attempt: published, known failure or unknown outcome |
+| `RecordGoogleReconciliation` | Internal exact-version GET observation for an eligible uncertain Google attempt; append safe comparison evidence |
 | `ConfirmSubmission` | Teacher confirmation that a reserved Rausgegangen listing was submitted |
 | `ConfirmPublication` | Later teacher confirmation of actual Rausgegangen publication, with an optional public HTTPS URL |
 
@@ -163,7 +164,8 @@ not credentials or free-form provider responses.
 | Reservation | New attempt → `in_progress` | Blocked; state plus command receipt commit atomically |
 | Trusted Google result | `in_progress` → `published` | A new explicit attempt may update the same known post |
 | Trusted Google result | `in_progress` → `failed` | A new explicit attempt with new command/operation IDs is permitted |
-| Trusted Google result | `in_progress` → `outcome_unknown` | Blocked until future reconciliation |
+| Trusted Google result | `in_progress` → `outcome_unknown` | Blocked until definitive reconciliation |
+| Trusted Google reconciliation | Eligible `in_progress`/`outcome_unknown` → `published`, `failed` or `outcome_unknown` | Only an exact confirmation or definitive rejection unblocks |
 | Teacher, Rausgegangen only | `in_progress` → `submitted` | Blocked; submitted is not published |
 | Teacher, Rausgegangen only | `submitted` → `published` | Remains blocked without an external update identity |
 
@@ -171,21 +173,22 @@ Manual publication is a separate event and may contain an optional HTTPS public
 URL; submission cannot carry a publication URL. Manual confirmations cannot
 target Google. Automatic-result commands cannot target Rausgegangen. Rausgegangen
 confirmations do not accept provider IDs or technical error/result fields. There
-is no manual cancellation/retry or reconciliation command in this change.
+is no manual cancellation/retry override. The internal reconciliation command is
+described in [exact-version reconciliation](google-publication-reconciliation.md).
 
 Known failures require one of `permission_denied`, `invalid_submission`,
 `provider_rejected` or `provider_unavailable`. These categories mean a *known*
 negative result; a timeout, lost connection or crash that could follow a send
 must be recorded as `outcome_unknown`, never guessed to have failed. Unknown
 results have no terminal-failure shortcut. Automatic unknown results may retain an
-optional validated Google post name internally for future reconciliation; this does
+optional validated Google post name internally for explicit reconciliation; this does
 not mark publication or unblock another attempt, and updates must match their target. An unresolved `in_progress` record
 after a crash also blocks recreation; elapsed time is not permission to retry.
 
 Result recording remains possible after a channel is disabled or a different
 draft is selected: it describes the original reserved operation. It grants no
-approval to the new draft. Published, failed and unknown events are terminal in
-this implementation; earlier events are never edited or removed.
+approval to the new draft. Published and failed attempts are terminal. Eligible unknown attempts can gain
+reconciliation observations; earlier events are never edited or removed.
 
 Only a committed reservation may precede a future provider operation. Concurrent
 reservations compete on the same aggregate revision; at most one commits. The
@@ -197,8 +200,8 @@ instead replay the original command or use a new identity after a known failure.
 `RecordPublicationResult` is a trusted application command, not teacher input.
 The [publication service](google-publication-service.md) now authorizes Google
 reservation and result orchestration. Manual confirmation service actions remain
-later work. Firebase Google configuration, OAuth, reconciliation, UI and deployment
-remain unverified or unimplemented.
+later work. OAuth wiring and explicit reconciliation are offline-tested; actual
+Firebase Google configuration, teacher UI and deployment remain unverified or unimplemented.
 
 ## Publication restoration and views
 
@@ -330,3 +333,6 @@ run passed 228 tests in 18.10 seconds before the final full runs.
 Local documentation links and `git diff --check` passed. Dependencies, lockfile,
 Callable actions, prompts, channel rules and historical examples are unchanged.
 No production services, provider requests, credentials or deployment were used.
+
+Explicit [Google reconciliation](google-publication-reconciliation.md) now appends trusted
+observations to eligible uncertain attempts without changing earlier records.

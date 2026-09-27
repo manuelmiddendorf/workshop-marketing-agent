@@ -23,7 +23,7 @@ from .revision import (
 )
 from .submission import prepare_google_submission, prepare_rausgegangen_submission
 from .publication import (
-    Digest, ExternalPostId, PublicURL, SafeError, PublicationEvent,
+    Digest, ExternalPostId, GooglePostName, PublicURL, SafeError, PublicationEvent, ReconciliationObservation,
     PUBLICATION_KINDS, apply_publication,
 )
 
@@ -137,6 +137,25 @@ class ConfirmSubmission(ChannelCommand):
     attempt_reference: Reference
 
 
+class RecordGoogleReconciliation(ChannelCommand):
+    """Internal observation from a trusted GET, never teacher-supplied evidence."""
+    kind: Literal["record_google_reconciliation"] = "record_google_reconciliation"
+    channel: Literal["google_business"] = "google_business"
+    attempt_reference: Reference
+    status: Literal["published", "failed", "outcome_unknown"]
+    external_post_id: GooglePostName
+    public_url: PublicURL | None = None
+    error_category: Literal["provider_rejected"] | None = None
+    reconciliation: ReconciliationObservation
+
+    @model_validator(mode="after")
+    def safe_observation(self):
+        PublicationEvent(reference=self.command_id, status=self.status, source="reconciliation",
+            recorded_by=self.actor_reference, recorded_at=self.now, external_post_id=self.external_post_id,
+            public_url=self.public_url, error_category=self.error_category, reconciliation=self.reconciliation)
+        return self
+
+
 class ConfirmPublication(ChannelCommand):
     kind: Literal["confirm_publication"] = "confirm_publication"
     attempt_reference: Reference
@@ -146,7 +165,7 @@ class ConfirmPublication(ChannelCommand):
 PilotCommand = Annotated[
     StartRound | AttachDraft | DirectRevision | AIRevision | BindLink | SelectVersion
     | ApproveVersion | PrepareSubmission | SetChannelEnabled | ReservePublication
-    | RecordPublicationResult | ConfirmSubmission | ConfirmPublication,
+    | RecordPublicationResult | ConfirmSubmission | ConfirmPublication | RecordGoogleReconciliation,
     Field(discriminator="kind"),
 ]
 COMMAND_ADAPTER = TypeAdapter(PilotCommand)

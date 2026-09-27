@@ -23,6 +23,7 @@ from .firestore_repository import CampaignStorageError, CommitOutcomeUnknown
 from .generation import DraftClient, generate_pilot_drafts
 from .revision import ChannelId, _aware_utc, _fingerprint_payload
 from .service_publication import GooglePublisher, publish_google, publication_replay
+from .service_reconciliation import reconcile_google, reconciliation_replay
 from .service_views import campaign_view, diagnostic_views, result_view
 
 
@@ -129,9 +130,15 @@ class SetChannelEnabled(ChannelMutation):
     enabled: bool
 
 
+class ReconcileGooglePublication(Mutation):
+    action: Literal["reconcile_google_publication"]
+    attempt_reference: Reference
+
+
 TeacherRequest = Annotated[
     GetCampaign | CreateCampaign | StartRound | GenerateDrafts | DirectRevision | AIRevision
-    | BindLink | SelectVersion | ApproveVersion | PrepareSubmission | SetChannelEnabled | PublishGoogle,
+    | BindLink | SelectVersion | ApproveVersion | PrepareSubmission | SetChannelEnabled | PublishGoogle
+    | ReconcileGooglePublication,
     Field(discriminator="action"),
 ]
 REQUEST_ADAPTER = TypeAdapter(TeacherRequest)
@@ -225,7 +232,7 @@ class PilotService:
                               or ((request.channel,) if isinstance(request, ChannelMutation) else ()))
         if any(channel not in self.dependencies.channels for channel in requested_channels):
             return _response("invalid_request")
-        if isinstance(request, PublishGoogle) and (request.workshop_reference != "malws-copy"
+        if isinstance(request, (PublishGoogle, ReconcileGooglePublication)) and (request.workshop_reference != "malws-copy"
                 or "google_business" not in self.dependencies.channels):
             return _response("forbidden")
         try:
@@ -265,6 +272,8 @@ class PilotService:
                     or any(r.service_request != binding for r in prior)):
                 return _response("request_conflict")
             if prior:
+                if isinstance(request, ReconcileGooglePublication):
+                    return reconciliation_replay(state, prior)
                 if isinstance(request, PublishGoogle):
                     return publication_replay(state, prior)
                 complete = not isinstance(request, GenerateDrafts) or len(prior) == len(request.channels)
@@ -292,6 +301,8 @@ class PilotService:
             return self._generate(request, state, binding)
         if isinstance(request, PublishGoogle):
             return publish_google(self, request, state, binding)
+        if isinstance(request, ReconcileGooglePublication):
+            return reconcile_google(self, request, state, binding)
         evidence = None
         now = self._now()
         if isinstance(request, (DirectRevision, AIRevision, BindLink, ApproveVersion, PrepareSubmission)):

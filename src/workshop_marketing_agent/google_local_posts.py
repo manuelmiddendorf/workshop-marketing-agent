@@ -1,6 +1,7 @@
 """Single-request Google Local Posts transport; no campaign orchestration."""
 
 from dataclasses import dataclass, field
+from datetime import date, time
 from http.client import HTTPSConnection
 from ipaddress import ip_address
 import json
@@ -33,6 +34,71 @@ class PostResult:
     resource_name: str | None = None
     state: ProviderState | None = None
     search_url: str | None = None
+    observed_payload: GoogleSubmissionPayload | None = field(default=None, repr=False)
+
+
+def observed_payload(data: dict) -> GoogleSubmissionPayload | None:
+    """Extract exact supported content, without filling missing provider fields.
+
+    Only documented output-only nested fields are ignored. Unsupported editable
+    fields cannot be dropped to manufacture a match with an approved submission.
+    """
+    try:
+        required = {"languageCode", "topicType", "summary", "event", "callToAction"}
+        if not required <= data.keys() or data.keys() & {"scheduledTime", "offer", "alertType"}:
+            return None
+        content = {key: data[key] for key in required}
+        if type(content["event"]) is not dict or type(content["callToAction"]) is not dict:
+            return None
+        event = dict(content["event"])
+        event.pop("recurringInstanceTime", None)  # Documented output-only timestamp.
+        content["event"] = event
+        schedule = event["schedule"]
+        for key in ("startDate", "endDate"):
+            value = schedule[key]
+            if set(value) != {"year", "month", "day"} or any(type(v) is not int for v in value.values()):
+                return None
+            date(**value)
+        for key in ("startTime", "endTime"):
+            value = schedule[key]
+            if (set(value) != {"hours", "minutes", "seconds", "nanos"}
+                    or any(type(v) is not int for v in value.values()) or value["nanos"] != 0):
+                return None
+            time(value["hours"], value["minutes"], value["seconds"])
+        if set(content["callToAction"]) != {"actionType", "url"}:
+            return None
+        if "media" in data:
+            if type(data["media"]) is not list:
+                return None
+            output_only = {"name", "googleUrl", "thumbnailUrl", "createTime", "dimensions", "insights", "attribution"}
+            content["media"] = []
+            for item in data["media"]:
+                if type(item) is not dict or set(item) - output_only != {"sourceUrl"}:
+                    return None
+                _booking_url(item["sourceUrl"])
+                content["media"].append({"sourceUrl": item["sourceUrl"]})
+        _booking_url(content["callToAction"]["url"])
+        payload = GoogleSubmissionPayload.model_validate_json(json.dumps(content, allow_nan=False))
+        if not payload.summary.strip() or not payload.event.title.strip():
+            return None
+        return payload
+    except (ValueError, TypeError, KeyError, OverflowError):
+        return None
+
+
+def _read_json(raw):
+    def unique(pairs):
+        result = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError("Ambiguous provider response")
+            result[key] = value
+        return result
+
+    def invalid(_):
+        raise ValueError("Invalid provider response")
+
+    return json.loads(raw, object_pairs_hook=unique, parse_constant=invalid)
 
 
 @dataclass(frozen=True, slots=True)
@@ -156,7 +222,7 @@ class GoogleLocalPosts:
                 return PostResult(operation, uncertain)
             if not isinstance(response.body, bytes) or len(response.body) > _MAX_RESPONSE_BYTES:
                 return PostResult(operation, uncertain)
-            data = json.loads(response.body)
+            data = _read_json(response.body) if operation == "get" else json.loads(response.body)
             if not isinstance(data, dict) or not self._valid_post(data.get("name")):
                 return PostResult(operation, uncertain)
             if operation != "create" and data["name"] != post_name:
@@ -183,6 +249,7 @@ class GoogleLocalPosts:
             }
             if not isinstance(state, str) or state not in outcomes:
                 return PostResult(operation, "unresolved", data["name"], search_url=search_url)
-            return PostResult(operation, outcomes[state], data["name"], state, search_url)
+            return PostResult(operation, outcomes[state], data["name"], state, search_url,
+                              observed_payload(data) if operation == "get" else None)
         except Exception:
             return PostResult(operation, uncertain)

@@ -65,7 +65,9 @@ There is no update-to-create fallback.
 ## Results and failure policy
 
 Results contain only operation, outcome, validated resource name, normalized state,
-and optional validated HTTPS `searchUrl`. Search queries are allowed; credentials,
+optional validated HTTPS `searchUrl`, and for GET only an optional strictly validated
+editable payload observation for [exact-version reconciliation](google-publication-reconciliation.md).
+The observation is excluded from result representations and never persisted. Search queries are allowed; credentials,
 fragments, malformed URLs, non-global IP addresses and local/internal host suffixes
 are rejected without DNS lookups. Extra response fields and raw Google
 errors are discarded. No exception, body, token, headers, or transport details are
@@ -116,8 +118,10 @@ Offline tests do not verify API access, account eligibility, location identity,
 provider payload acceptance, image reachability, or production publication.
 
 Orchestration with durable [publication reservations](pilot-campaign-state.md#publication-target-and-immutable-binding)
-is implemented in the separate service. Firebase secrets, reconciliation, Callable
-configuration, UI and deployment remain later work. No OAuth storage/refresh, discovery, retries, deletion or insights are added.
+is implemented in the separate service. Firebase OAuth wiring and explicit historical
+reconciliation are offline-tested. Actual credentials, location verification, teacher UI
+and deployment remain outstanding. This transport adds no credential storage,
+discovery, retries, deletion or insights.
 
 ## Offline verification
 

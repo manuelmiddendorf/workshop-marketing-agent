@@ -163,7 +163,8 @@ implements the production repository contract with an injected client. Productio
 configuration and indexes remain unverified. Durable publication reservations and
 append-only recorded result history are implemented. The [Google publication service](google-publication-service.md)
 now connects reservations and recorded outcomes to the injected transport; live operation
-remains unverified.
+remains unverified. Explicit [reconciliation](google-publication-reconciliation.md)
+compares one known provider post with the exact reserved payload and appends safe evidence.
 
 The [teacher service facade](pilot-teacher-service.md) now checks an injected
 workshop-access policy against verified server context before loading state or

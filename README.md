@@ -166,6 +166,7 @@ systems and production deployment runtimes remain unverified.
 - [Pilot draft generation](docs/pilot-draft-generation.md)
 - [Draft revision and exact-version approval](docs/draft-revision-approval.md)
 - [Prompt comparison](evaluations/prompt-comparison.md)
+- [Exact-version Google publication reconciliation](docs/google-publication-reconciliation.md)
 - [Project working guidelines](AGENTS.md)
 
 Project documentation, code comments, issues, and pull requests use English.
