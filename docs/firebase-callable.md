@@ -83,6 +83,9 @@ lookups. It neither changes those applications nor repeats the booking audit.
 The [Google OAuth wiring](google-oauth-wiring.md) now supplies the publication adapter
 with a lazy server-side refresh grant. Real credentials and production access remain unverified.
 
+The [assisted Rausgegangen actions](rausgegangen-teacher-workflow.md) use the existing
+Callable forwarding and teacher policy, with no Google-secret access or new configuration.
+
 ## Explicit configuration and initialization
 
 | Setting | Value or source |

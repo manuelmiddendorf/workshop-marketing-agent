@@ -249,7 +249,9 @@ reservation/result commands with one possible dispatch. The [Firebase OAuth wiri
 provider; actual credentials/location configuration and live access remain unverified.
 
 Google is the planned first external automatic channel. Rausgegangen and HIMBEER
-start with assisted manual listings. A manual fallback may be offered without
+start with assisted manual listings. The [Rausgegangen teacher service](rausgegangen-teacher-workflow.md)
+now reserves exact approved copy and records separate teacher confirmations, with
+no portal automation. A manual fallback may be offered without
 reporting a failed API attempt as successful. The studio's workshop page remains
 the canonical source of information and booking destination. Its existing
 publishing workflow is integrated, not automatically replaced by a second

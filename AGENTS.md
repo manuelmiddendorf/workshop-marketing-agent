@@ -19,7 +19,9 @@
   refresh request. Explicit known-resource Google reconciliation compares the exact
   reserved payload and records append-only evidence; manual resolution of remaining
   unknowns and actual credentials/location configuration and live access remain unverified. Production storage,
-  IAM, App Check integration and deployment remain unverified. Publishing and
+  IAM, App Check integration and deployment remain unverified. Rausgegangen service
+  actions now reserve exact approved copy and record separate manual submission and
+  publication confirmations, without portal automation. Publishing and
   teacher-app integration remain planned; implement them only through subsequent tasks.
 - Before making changes, read the relevant sections of
   [docs/architecture.md](docs/architecture.md) and [docs/v1-scope.md](docs/v1-scope.md).

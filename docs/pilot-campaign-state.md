@@ -199,8 +199,8 @@ instead replay the original command or use a new identity after a known failure.
 
 `RecordPublicationResult` is a trusted application command, not teacher input.
 The [publication service](google-publication-service.md) now authorizes Google
-reservation and result orchestration. Manual confirmation service actions remain
-later work. OAuth wiring and explicit reconciliation are offline-tested; actual
+reservation and result orchestration. The [Rausgegangen service actions](rausgegangen-teacher-workflow.md)
+now expose reservation and separate manual submission/publication confirmations. OAuth wiring and explicit reconciliation are offline-tested; actual
 Firebase Google configuration, teacher UI and deployment remain unverified or unimplemented.
 
 ## Publication restoration and views

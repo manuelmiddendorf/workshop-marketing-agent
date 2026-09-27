@@ -24,6 +24,8 @@ from .generation import DraftClient, generate_pilot_drafts
 from .revision import ChannelId, _aware_utc, _fingerprint_payload
 from .service_publication import GooglePublisher, publish_google, publication_replay
 from .service_reconciliation import reconcile_google, reconciliation_replay
+from .service_rausgegangen import rausgegangen_action, manual_replay
+from .publication import PublicURL
 from .service_views import campaign_view, diagnostic_views, result_view
 
 
@@ -135,10 +137,31 @@ class ReconcileGooglePublication(Mutation):
     attempt_reference: Reference
 
 
+class BeginRausgegangenSubmission(Mutation):
+    action: Literal["begin_rausgegangen_submission"]
+    version_reference: Reference
+    approval_reference: Reference
+    submission_reference: Reference
+
+
+class ConfirmRausgegangenSubmission(Mutation):
+    action: Literal["confirm_rausgegangen_submission"]
+    attempt_reference: Reference
+
+
+class ConfirmRausgegangenPublication(Mutation):
+    action: Literal["confirm_rausgegangen_publication"]
+    attempt_reference: Reference
+    public_url: PublicURL | None = None
+
+
+RAUSGEGANGEN_ACTIONS = (BeginRausgegangenSubmission, ConfirmRausgegangenSubmission, ConfirmRausgegangenPublication)
+
+
 TeacherRequest = Annotated[
     GetCampaign | CreateCampaign | StartRound | GenerateDrafts | DirectRevision | AIRevision
     | BindLink | SelectVersion | ApproveVersion | PrepareSubmission | SetChannelEnabled | PublishGoogle
-    | ReconcileGooglePublication,
+    | ReconcileGooglePublication | BeginRausgegangenSubmission | ConfirmRausgegangenSubmission | ConfirmRausgegangenPublication,
     Field(discriminator="action"),
 ]
 REQUEST_ADAPTER = TypeAdapter(TeacherRequest)
@@ -235,6 +258,9 @@ class PilotService:
         if isinstance(request, (PublishGoogle, ReconcileGooglePublication)) and (request.workshop_reference != "malws-copy"
                 or "google_business" not in self.dependencies.channels):
             return _response("forbidden")
+        if isinstance(request, RAUSGEGANGEN_ACTIONS) and (request.workshop_reference != "malws-copy"
+                or "rausgegangen" not in self.dependencies.channels):
+            return _response("forbidden")
         try:
             return self._authorized(request, principal)
         except CommitOutcomeUnknown:
@@ -272,6 +298,8 @@ class PilotService:
                     or any(r.service_request != binding for r in prior)):
                 return _response("request_conflict")
             if prior:
+                if isinstance(request, RAUSGEGANGEN_ACTIONS):
+                    return manual_replay(state, prior)
                 if isinstance(request, ReconcileGooglePublication):
                     return reconciliation_replay(state, prior)
                 if isinstance(request, PublishGoogle):
@@ -303,6 +331,8 @@ class PilotService:
             return publish_google(self, request, state, binding)
         if isinstance(request, ReconcileGooglePublication):
             return reconcile_google(self, request, state, binding)
+        if isinstance(request, RAUSGEGANGEN_ACTIONS):
+            return rausgegangen_action(self, request, state, binding)
         evidence = None
         now = self._now()
         if isinstance(request, (DirectRevision, AIRevision, BindLink, ApproveVersion, PrepareSubmission)):
