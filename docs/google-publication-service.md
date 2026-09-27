@@ -2,8 +2,8 @@
 
 `publish_google` connects the existing publication commands to an explicitly
 injected Google transport. It is limited to `malws-copy` and `google_business`.
-This is framework-independent orchestration, verified offline only. Existing
-Firebase wiring does not supply a Google boundary, so it cannot publish.
+This is framework-independent orchestration, verified offline only. The [Firebase OAuth wiring](google-oauth-wiring.md) now supplies a lazy Google boundary;
+actual secret values, location identity and production operation remain unverified.
 
 ## Teacher intent and server authority
 
@@ -113,8 +113,9 @@ reconciliation and never resumes. A new request against a blocked target returns
 manual investigation as a crash after dispatch. There is no external exactly-once
 guarantee and elapsed time does not permit retrying an unknown outcome.
 
-Remaining work: OAuth wiring, API approval, reconciliation, Firebase secret/Callable
-configuration, teacher UI, deployment and live verification. Offline tests establish
+OAuth/Callable wiring is implemented with offline checks. Remaining work: API approval,
+actual Firebase secret/location configuration, reconciliation, teacher UI, deployment
+and live verification. Offline tests establish
 neither production Google access nor successful external publication. No live Google
 or Firebase requests, credentials, automatic reconciliation or deployment were used.
 

@@ -7,6 +7,8 @@ from threading import Lock
 import firebase_admin
 from firebase_admin import auth, firestore
 
+from google_oauth import POSTS_TIMEOUT, TOKEN_TIMEOUT, RefreshTokenProvider, token_transport
+from workshop_marketing_agent.google_local_posts import GoogleLocalPosts, https_transport
 from workshop_marketing_agent.feed import _http_get
 from workshop_marketing_agent.firestore_repository import FirestoreCampaignRepository
 from workshop_marketing_agent.generation import OpenAIDraftClient
@@ -91,7 +93,8 @@ def teacher_has_access(context, workshop, *, get_user, get_user_by_email, read_r
         return False
 
 
-def build_service(context, *, app, model, api_key):
+def build_service(context, *, app, model, api_key, google_location="", google_oauth=lambda: "",
+                  token_http=token_transport, posts_http=https_transport):
     """Trusted wiring; secrets and clients are evaluated only during an invocation."""
     database = firestore.client(app=app, database_id=DATABASE)
 
@@ -119,6 +122,9 @@ def build_service(context, *, app, model, api_key):
         endpoint_for=lambda _: ENDPOINT, feed_loader=_http_get, client=DraftClient(),
         model=model, model_timeout=MODEL_TIMEOUT, feed_timeout=FEED_TIMEOUT,
         workshops=frozenset({WORKSHOP}), channels=CHANNELS,
+        google=GoogleLocalPosts(location=google_location,
+            token_provider=RefreshTokenProvider(google_oauth, token_http, TOKEN_TIMEOUT),
+            transport=posts_http, timeout=POSTS_TIMEOUT),
     ))
 
 

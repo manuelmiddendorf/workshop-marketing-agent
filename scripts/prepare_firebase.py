@@ -37,7 +37,7 @@ def main():
     (source / "requirements.txt").write_text(
         requirements + f"\n./vendor/{wheel.name} --hash=sha256:{digest}\n", encoding="utf-8",
     )
-    for filename in ("main.py", "pilot_adapter.py"):
+    for filename in ("main.py", "pilot_adapter.py", "google_oauth.py"):
         shutil.copyfile(root / "functions" / filename, source / filename)
     (output / "firebase.json").write_text(json.dumps({"functions": [{
         "source": "functions", "codebase": "pilot-marketing", "runtime": "python311",

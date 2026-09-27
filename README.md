@@ -108,7 +108,8 @@ for exact Google payloads and Rausgegangen copy packages. Preparation makes no
 network requests and records no submission or publication. The separate
 [Google Local Posts transport](docs/google-local-posts.md) is offline-tested and
 connected through the [publication service](docs/google-publication-service.md);
-Firebase Google configuration and live access remain unverified.
+[Firebase OAuth wiring](docs/google-oauth-wiring.md) is offline-tested, while actual
+credentials/location configuration and live access remain unverified.
 
 Campaign state and explicit application commands now support strict JSON snapshots,
 independent channel histories, replay receipts and atomic revision checks. See the
