@@ -159,7 +159,7 @@ def test_preconditions_never_reserve_or_dispatch(pilot, case):
     if case == "stale_revision":
         changes["expected_revision"] = 0
     result = h.service.handle(h.intent | changes, principal=None if case == "unauthenticated" else PRINCIPAL)
-    assert result["status"] in {"forbidden", "unauthenticated", "publication_unconfigured", "revision_conflict"}
+    assert result["status"] in {"forbidden", "unauthenticated", "publication_unconfigured", "google_api_unavailable", "revision_conflict"}
     assert dump_campaign(h.repo.load("c-1")) == before
     assert not h.google.calls and not h.feed_calls
 
@@ -414,12 +414,14 @@ def test_wrong_campaign_workshop_does_not_dispatch(pilot):
     assert not h.google.calls
 
 
-def test_replay_works_without_google_configuration(pilot):
+def test_manual_only_mode_blocks_api_replay_without_rewriting_history(pilot):
     h = pilot
     result = publish(h)
     h.service = PilotService(replace(h.dependencies, google=None))
-    assert publish(h) == result
-    assert len(h.google.calls) == 1
+    before = dump_campaign(h.repo.load("c-1"))
+    assert publish(h)["status"] == "google_api_unavailable"
+    assert dump_campaign(h.repo.load("c-1")) == before
+    assert result["status"] == "published" and len(h.google.calls) == 1
 
 
 def test_request_namespace_is_campaign_local_but_action_is_bound(pilot):
