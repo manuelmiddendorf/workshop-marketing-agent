@@ -25,6 +25,7 @@ from .revision import ChannelId, _aware_utc, _fingerprint_payload
 from .service_publication import GooglePublisher, publish_google, publication_replay
 from .service_reconciliation import reconcile_google, reconciliation_replay
 from .service_rausgegangen import rausgegangen_action, manual_replay
+from .service_google_handoff import google_handoff, API_PENDING_MESSAGE
 from .publication import PublicURL
 from .service_views import campaign_view, diagnostic_views, result_view
 
@@ -46,6 +47,15 @@ class Request(FrozenState):
 
 class GetCampaign(Request):
     action: Literal["get_campaign"]
+
+
+class GetGoogleHandoff(Request):
+    action: Literal["get_google_handoff"]
+    expected_revision: Annotated[int, Field(ge=0)]
+    round_reference: Reference
+    version_reference: Reference
+    approval_reference: Reference
+    submission_reference: Reference
 
 
 class CreateCampaign(Request):
@@ -159,7 +169,7 @@ RAUSGEGANGEN_ACTIONS = (BeginRausgegangenSubmission, ConfirmRausgegangenSubmissi
 
 
 TeacherRequest = Annotated[
-    GetCampaign | CreateCampaign | StartRound | GenerateDrafts | DirectRevision | AIRevision
+    GetCampaign | GetGoogleHandoff | CreateCampaign | StartRound | GenerateDrafts | DirectRevision | AIRevision
     | BindLink | SelectVersion | ApproveVersion | PrepareSubmission | SetChannelEnabled | PublishGoogle
     | ReconcileGooglePublication | BeginRausgegangenSubmission | ConfirmRausgegangenSubmission | ConfirmRausgegangenPublication,
     Field(discriminator="action"),
@@ -255,12 +265,14 @@ class PilotService:
                               or ((request.channel,) if isinstance(request, ChannelMutation) else ()))
         if any(channel not in self.dependencies.channels for channel in requested_channels):
             return _response("invalid_request")
-        if isinstance(request, (PublishGoogle, ReconcileGooglePublication)) and (request.workshop_reference != "malws-copy"
+        if isinstance(request, (PublishGoogle, ReconcileGooglePublication, GetGoogleHandoff)) and (request.workshop_reference != "malws-copy"
                 or "google_business" not in self.dependencies.channels):
             return _response("forbidden")
         if isinstance(request, RAUSGEGANGEN_ACTIONS) and (request.workshop_reference != "malws-copy"
                 or "rausgegangen" not in self.dependencies.channels):
             return _response("forbidden")
+        if isinstance(request, (PublishGoogle, ReconcileGooglePublication)) and self.dependencies.google is None:
+            return {"status": "google_api_unavailable", "message": API_PENDING_MESSAGE}
         try:
             return self._authorized(request, principal)
         except CommitOutcomeUnknown:
@@ -289,6 +301,12 @@ class PilotService:
         if isinstance(request, GetCampaign):
             return (_response("not_found") if state is None else
                     _response("ok", campaign=campaign_view(state, self.dependencies.channels)))
+        if isinstance(request, GetGoogleHandoff):
+            if state is None:
+                return _response("not_found")
+            if state.revision != request.expected_revision:
+                return _response("revision_conflict", refresh_required=True, revision=state.revision)
+            return google_handoff(self, request, state)
         binding = _binding(request, principal)
         if state is not None:
             prior = [r for r in state.receipts if r.service_request is not None
