@@ -1,14 +1,16 @@
 # Server-side Google OAuth for the pilot Callable
 
-The Callable service factory now injects `GoogleLocalPosts` and a lazy
-`RefreshTokenProvider`. This enables the existing [publication sequence](google-publication-service.md)
-when server configuration is supplied. Implementation and verification are offline;
-no secret was created, no real token obtained, and nothing deployed or published.
+The current Callable uses a [temporary manual-only deployment](google-manual-handoff.md).
+It binds only OpenAI and constructs no Google publisher. The implementation below
+is retained for later controlled API activation; its tests opt in explicitly.
+Google OAuth is **not** a prerequisite for this manual-only deployment. Do not
+create placeholder credential versions. Automatic integration remains the goal.
 
 ## Server-owned parameters
 
-`pilot_teacher_service` binds the existing `PILOT_OPENAI_API_KEY` secret and one
-additional `SecretParam`, **`PILOT_GOOGLE_OAUTH`**. Its value must be exactly one JSON
+The retained automatic integration previously bound **`PILOT_GOOGLE_OAUTH`** in
+addition to OpenAI. Reactivation requires deliberately restoring that binding. Its
+value must be exactly one JSON
 object with these three fields. This example contains placeholders only:
 
 ```json
@@ -28,7 +30,8 @@ missing/extra keys, malformed JSON, non-finite values and invalid types are reje
 No error identifies which credential field failed. There are no credential files
 or application environment files in this change.
 
-**`PILOT_GOOGLE_LOCATION`** is a separate `StringParam`. Its default is empty, which
+For later API activation, **`PILOT_GOOGLE_LOCATION`** was a separate `StringParam`
+(now removed from the deployed entrypoint). Its default was empty, which
 disables publication before reservation while leaving review actions available.
 Configure the verified canonical `accounts/{accountId}/locations/{locationId}`;
 `accounts/REPLACE_ACCOUNT/locations/REPLACE_LOCATION` illustrates the shape only.
@@ -125,7 +128,7 @@ Official sources checked 2026-09-27:
 [offline access and token refresh/revocation](https://developers.google.com/identity/protocols/oauth2/web-server),
 and [Firebase secret parameters and rotation](https://firebase.google.com/docs/functions/config-env).
 
-## Offline verification
+## Historical automatic-integration verification
 
 `test_google_oauth.py` uses synthetic markers and fake HTTP for strict parsing,
 request construction, scope/type/token validation, timeout limits, no retry/redirect,

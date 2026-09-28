@@ -1,5 +1,11 @@
 # Assisted Rausgegangen teacher workflow
 
+**Manual Google pilot update (2026-09-28):** The Callable now uses the
+[manual-only Google handoff](google-manual-handoff.md), without a Google OAuth
+binding/publisher. Exact approved copy can be handed off without recording
+publication. Automatic integration remains the goal; manual confirmation and live
+activation are separate work. Rausgegangen confirmation rules are unchanged.
+
 The existing `PilotService` and Firebase Callable now expose reservation and two
 separate manual confirmations for `malws-copy`. The server derives the
 `rausgegangen` channel and reuses `ReservePublication`, `ConfirmSubmission` and

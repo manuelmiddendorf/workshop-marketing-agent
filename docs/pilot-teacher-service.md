@@ -1,5 +1,11 @@
 # Authenticated pilot teacher service
 
+**Manual Google pilot update (2026-09-28):** The Callable now uses the
+[manual-only Google handoff](google-manual-handoff.md), without a Google OAuth
+binding/publisher. Exact approved copy can be handed off without recording
+publication. Automatic integration remains the goal; manual confirmation and live
+activation are separate work. Rausgegangen confirmation rules are unchanged.
+
 `PilotService` in `workshop_marketing_agent.service` is a synchronous,
 framework-independent server facade over the existing campaign application.
 It accepts verified server context separately from strictly validated request
@@ -83,6 +89,7 @@ require `channel`; version actions additionally require `version_reference`.
 | `select_version` | Exact existing version | No; never establishes readiness |
 | `approve_version` | Exact selected version | Yes |
 | `prepare_submission` | Exact selected version and `approval_reference` | Yes |
+| `get_google_handoff` | Round, expected revision, exact version/approval/submission references; read-only, no request ID | Yes; current evidence only |
 | `publish_google` | Exact version, `approval_reference`, `submission_reference`; channel is server-derived | Yes |
 | `reconcile_google_publication` | Exact `attempt_reference`; channel/resource are server-derived | No; historical provider GET only |
 | `begin_rausgegangen_submission` | Exact version, approval and submission references; channel server-derived | Yes; reserve before active copy |
