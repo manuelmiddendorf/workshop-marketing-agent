@@ -94,7 +94,7 @@ def teacher_has_access(context, workshop, *, get_user, get_user_by_email, read_r
 
 
 def build_service(context, *, app, model, api_key, google_location="", google_oauth=lambda: "",
-                  token_http=token_transport, posts_http=https_transport):
+                  token_http=token_transport, posts_http=https_transport, enable_google=False):
     """Trusted wiring; secrets and clients are evaluated only during an invocation."""
     database = firestore.client(app=app, database_id=DATABASE)
 
@@ -124,7 +124,7 @@ def build_service(context, *, app, model, api_key, google_location="", google_oa
         workshops=frozenset({WORKSHOP}), channels=CHANNELS,
         google=GoogleLocalPosts(location=google_location,
             token_provider=RefreshTokenProvider(google_oauth, token_http, TOKEN_TIMEOUT),
-            transport=posts_http, timeout=POSTS_TIMEOUT),
+            transport=posts_http, timeout=POSTS_TIMEOUT) if enable_google else None,
     ))
 
 

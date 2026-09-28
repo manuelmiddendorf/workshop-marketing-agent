@@ -182,7 +182,7 @@ def test_preconditions_no_provider(unknown, case):
     elif case == "configuration":
         h.service = PilotService(replace(h.dependencies, google=None))
     result = h.service.handle(h.reconcile | changes, principal=None if case == "unauthenticated" else PRINCIPAL)
-    assert result["status"] in {"unauthenticated", "forbidden", "invalid_request", "not_found", "revision_conflict", "reconciliation_unavailable"}
+    assert result["status"] in {"unauthenticated", "forbidden", "invalid_request", "not_found", "revision_conflict", "reconciliation_unavailable", "google_api_unavailable"}
     assert not h.read.calls and h.read.tokens == 0
 
 

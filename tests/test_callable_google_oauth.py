@@ -55,9 +55,9 @@ def wired(pilot, monkeypatch):
     monkeypatch.setattr(adapter, "FirestoreCampaignRepository", lambda *a, **kw: h.storage)
     monkeypatch.setattr(adapter, "_http_get", h.dependencies.feed_loader)
     monkeypatch.setattr(adapter, "datetime", NS(now=lambda tz: NOW))
-    monkeypatch.setattr(main, "GOOGLE_OAUTH", Secret())
+    monkeypatch.setattr(main, "GOOGLE_OAUTH", Secret(), raising=False)
     monkeypatch.setattr(main, "OPENAI_API_KEY", OpenAISecret())
-    monkeypatch.setattr(main, "GOOGLE_LOCATION", NS(value=LOCATION))
+    monkeypatch.setattr(main, "GOOGLE_LOCATION", NS(value=LOCATION), raising=False)
     monkeypatch.setattr(main, "MODEL", NS(value="synthetic-model"))
     def posts_http(**kwargs):
         assert len(h.secrets) == len(token.calls) == 1
@@ -69,7 +69,8 @@ def wired(pilot, monkeypatch):
             raise h.post_error
         return HttpResponse(200, ('{"name":"' + POST + '","state":"LIVE"}').encode())
     def factory(ctx, **kwargs):
-        return adapter.build_service(ctx, **kwargs, token_http=token.http, posts_http=posts_http)
+        return adapter.build_service(ctx, **kwargs, token_http=token.http, posts_http=posts_http, enable_google=True,
+            google_location=main.GOOGLE_LOCATION.value, google_oauth=lambda: main.GOOGLE_OAUTH.value)
     monkeypatch.setattr(main, "build_service", factory)
     monkeypatch.setattr(util, "on_call_check_tokens", lambda req: NS(
         auth=util.OnCallTokenState.VALID if h.authenticated else util.OnCallTokenState.MISSING,

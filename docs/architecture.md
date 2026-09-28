@@ -1,5 +1,11 @@
 # Architecture: workshop-marketing-agent
 
+**Manual Google pilot update (2026-09-28):** The Callable now uses the
+[manual-only Google handoff](google-manual-handoff.md), without a Google OAuth
+binding/publisher. Exact approved copy can be handed off without recording
+publication. Automatic integration remains the goal; manual confirmation and live
+activation are separate work. Rausgegangen confirmation rules are unchanged.
+
 As of September 26, 2026. Status: **Draft for joint review; package, provisional input validation, public pilot import, and review-only pilot generation implemented**.
 
 Confirmed product decisions are documented in [v1-scope.md](v1-scope.md).

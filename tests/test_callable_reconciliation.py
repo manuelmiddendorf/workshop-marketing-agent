@@ -35,7 +35,8 @@ def reconciliation_callable(wired, monkeypatch):
         h.posts.append(kwargs)
         return HttpResponse(200, json.dumps(h.read.data).encode())
     def factory(ctx, **kwargs):
-        return adapter.build_service(ctx, **kwargs, token_http=h.token.http, posts_http=http)
+        return adapter.build_service(ctx, **kwargs, token_http=h.token.http, posts_http=http, enable_google=True,
+            google_location=h.main.GOOGLE_LOCATION.value, google_oauth=lambda: h.main.GOOGLE_OAUTH.value)
     monkeypatch.setattr(h.main, "build_service", factory)
     return h
 

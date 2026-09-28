@@ -1,5 +1,11 @@
 # Preparing approved pilot submissions
 
+**Manual Google pilot update (2026-09-28):** The Callable now uses the
+[manual-only Google handoff](google-manual-handoff.md), without a Google OAuth
+binding/publisher. Exact approved copy can be handed off without recording
+publication. Automatic integration remains the goal; manual confirmation and live
+activation are separate work. Rausgegangen confirmation rules are unchanged.
+
 Preparation is a pure, local operation. It returns a checked Google payload or
 Rausgegangen copy package, never a publication record, external ID, authorization,
 or submission-success status. Callers supply a newly imported workshop and an

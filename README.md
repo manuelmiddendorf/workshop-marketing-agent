@@ -108,7 +108,9 @@ for exact Google payloads and Rausgegangen copy packages. Preparation makes no
 network requests and records no submission or publication. The separate
 [Google Local Posts transport](docs/google-local-posts.md) is offline-tested and
 connected through the [publication service](docs/google-publication-service.md);
-[Firebase OAuth wiring](docs/google-oauth-wiring.md) is offline-tested, while actual
+[Firebase OAuth wiring](docs/google-oauth-wiring.md) is retained but inactive in the
+[manual-only Google handoff](docs/google-manual-handoff.md). That Callable binds
+only OpenAI and records no publication from copying/opening. Actual
 credentials/location configuration and live access remain unverified.
 
 Campaign state and explicit application commands now support strict JSON snapshots,
